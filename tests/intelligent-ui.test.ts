@@ -1,7 +1,13 @@
+import { documentLibrary } from '../packages/intelligent-ui/src/library';
 import { describe, expect, it } from 'vitest';
 import { documentPrompt, localDocumentProgram, validateOpenUIProgram } from '../packages/intelligent-ui/src/local';
 
 describe('biblioteca Intelligent UI offline', () => {
+  it('inicializa o catálogo OpenUI sem erro de slots', () => {
+    expect(documentLibrary.components.ReaderEvidence).toBeDefined();
+    expect(documentLibrary.components.ReaderChecklist).toBeDefined();
+    expect(documentLibrary.components.ReaderMetric).toBeDefined();
+  });
   const document = { name: 'Manual de Logs.txt', text: 'Severidade ERROR aparece nos logs.\nAlertas acionáveis precisam de contexto.\nUm incidente precisa de correlação.' };
   it('gera programa OpenUI Lang real, sem conexão', () => {
     const program = localDocumentProgram(document);
