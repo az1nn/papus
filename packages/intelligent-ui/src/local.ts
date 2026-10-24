@@ -14,7 +14,7 @@ export function localDocumentProgram(document: DocumentSnapshot, query = ''): st
   const queryNorm = query.trim().toLocaleLowerCase('pt-BR');
   const relevant = queryNorm ? candidates.filter((line) => line.toLocaleLowerCase('pt-BR').includes(queryNorm)) : candidates;
   const selected = relevant.slice(0, 4);
-  const refs = selected.map((line, i) => `e${i + 1}`);
+  const refs = selected.map((_, i) => `e${i + 1}`);
   const program = [
     `root = Stack([title, summary, metrics${refs.length ? ', ' + refs.join(', ') : ''}, checklist])`,
     `title = TextContent(${quote(document.name)}, "large-heavy")`,
