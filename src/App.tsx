@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { readLibrary, readFile, saveFile, removeStoredFile, type DocMeta } from './storage';
-import { ArrowDownToLine, BookOpenText, Check, ChevronRight, CloudOff, Copy, FilePlus2, FileSearch, FileText, FolderOpen, HardDrive, LoaderCircle, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UploadCloud, X } from 'lucide-react';
+import { ArrowDownToLine, BookOpenText, Check, ChevronRight, CloudOff, Copy, FilePlus2, FileSearch, FileText, FolderOpen, HardDrive, LoaderCircle, Menu, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UploadCloud, X } from 'lucide-react';
 import PdfViewer from './PdfViewer';
 import { DocumentUI, SAFE_OPENUI_PROMPT, documentPrompt } from '@reader/intelligent-ui';
 import { findMatches, loadDocument, SUPPORTED_EXTENSIONS, type ParsedDocument } from './parsers';
