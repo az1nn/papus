@@ -29,6 +29,28 @@ jobs:
         run: npm run test
       - name: Typecheck and production bundle
         run: npm run build
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser smoke and offline PWA
+        run: npm run test:e2e
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: universal-reader-pwa
+          path: dist/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload browser test diagnostics
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Enforce frontend-only runtime
         run: |
           node --input-type=module <<'NODE'
