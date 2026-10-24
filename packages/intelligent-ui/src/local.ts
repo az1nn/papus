@@ -43,3 +43,50 @@ export function documentPrompt(document: DocumentSnapshot, question: string, lib
     `<arquivo>\n${document.text.slice(0, 22000)}\n</arquivo>`
   ].join('\n\n');
 }
+
+/** Restrict externally pasted programs to a document-only, offline-safe component subset.
+ * The full OpenUI runtime is used for rendering, but pasted programs cannot invoke
+ * queries, mutations, actions, images, links or other network-capable components.
+ */
+export const SAFE_OPENUI_COMPONENTS = [
+  'Stack', 'Card', 'CardHeader', 'TextContent', 'Table', 'Col',
+  'BarChart', 'LineChart', 'PieChart',
+  'ReaderEvidence', 'ReaderChecklist', 'ReaderMetric'
+] as const;
+export const SAFE_OPENUI_PROMPT = [
+  'Componente raiz: root = Stack(children).',
+  'Componentes permitidos e assinaturas: Stack(children, direction?, gap?, align?, justify?, wrap?); Card(children, variant?, direction?, gap?, align?, justify?, wrap?); CardHeader(title, subtitle?); TextContent(text, size?); Table(columns); Col(label, data, type?); BarChart(labels, series, variant?, xLabel?, yLabel?, height?); LineChart(labels, series, variant?, xLabel?, yLabel?, height?); PieChart(labels, series, variant?, height?); ReaderEvidence(reference, excerpt); ReaderChecklist(title, items); ReaderMetric(label, value).',
+  'Somente componentes estáticos e locais; não use links, URLs, Image, Query, Mutation, ferramentas, funções @, bindings $ ou ações.'
+].join('\\n');
+
+export type ProgramValidation = { ok: true } | { ok: false; reason: string };
+
+export function validateOpenUIProgram(program: string): ProgramValidation {
+  if (!program.trim()) return { ok: false, reason: 'Cole um programa OpenUI Lang antes de renderizar.' };
+  if (program.length > 50_000) return { ok: false, reason: 'Programa OpenUI ultrapassa 50.000 caracteres.' };
+  // Erase quoted text while preserving code outside it. Never interpret model output as JS.
+  let code = '';
+  let inString = false;
+  let escaped = false;
+  for (const char of program) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\\\') escaped = true;
+      else if (char === '"') inString = false;
+      code += ' ';
+    } else if (char === '"') { inString = true; code += ' '; }
+    else code += char;
+  }
+  if (inString) return { ok: false, reason: 'Programa OpenUI com string não terminada.' };
+  if (!/^\\s*root\\s*=\\s*Stack\\s*\\(/m.test(code))
+    return { ok: false, reason: 'A interface precisa iniciar com root = Stack(...).' };
+  if (/[ @$]/.test(code.replace(/ /g, ''))) {
+    return { ok: false, reason: 'Ações, bindings e funções não são permitidos no modo offline.' };
+  }
+  const allowed = new Set<string>(SAFE_OPENUI_COMPONENTS);
+  const calls = code.matchAll(/\\b([a-zA-Z][\\w]*)\\s*\\(/g);
+  for (const call of calls) {
+    if (!allowed.has(call[1])) return { ok: false, reason: `Componente não permitido: ${call[1]}.` };
+  }
+  return { ok: true };
+}
