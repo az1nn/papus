@@ -9,6 +9,8 @@ npm install
 npm run dev
 npm run test
 npm run build
+npx playwright install chromium
+npm run test:e2e
 npm run android:add
 npm run android:sync
 npm run android:open
@@ -22,11 +24,12 @@ O `npm run dev` inicia exclusivamente o servidor **de desenvolvimento Vite**; a 
 - `src/parsers.ts` — PDF (PDF.js), HTML sanitizado (DOMPurify), DOCX (Mammoth), PPTX (JSZip).
 - `src/legacy.ts` — extração textual limitada DOC/PPT OLE2, via `cfb`, sem serviço externo.
 - `src/App.tsx` — biblioteca IndexedDB, busca, leitor e painel OpenUI.
+- `src/storage.ts` — fila serial para mutações da biblioteca, com rollback básico e mensagens de erro.
 - `vite.config.ts` — PWA com service worker, ícones e manifest.
 
 ### Intelligent UI
 
-O renderer é o componente **real** `Renderer` de `@openuidev/react-lang`, alimentado com `documentLibrary`, uma extensão da biblioteca `openuiLibrary` de `@openuidev/react-ui`. A visualização local cria um programa OpenUI Lang a partir do texto extraído; **não é uma geração por GPT-6**. O usuário pode copiar um prompt com a especificação do catálogo, usar um modelo em outro ambiente e colar o OpenUI Lang de volta no aplicativo. Esse fluxo não faz chamadas remotas a partir do leitor.
+O renderer é o componente **real** `Renderer` de `@openuidev/react-lang`, alimentado com `documentLibrary`, uma extensão da biblioteca `openuiLibrary` de `@openuidev/react-ui`. A visualização local cria um programa OpenUI Lang a partir do texto extraído; **não é uma geração por GPT-6**. O usuário pode copiar um prompt com a especificação do catálogo, usar um modelo em outro ambiente e colar o OpenUI Lang de volta no aplicativo. Esse fluxo não faz chamadas remotas a partir do leitor. Programas OpenUI Lang importados usam lista restrita de componentes offline: ações, imagens remotas, Query, Mutation e bindings são rejeitados.
 
 **Importante:** OpenUI não é o código interno do ChatGPT; é uma implementação independente, de código aberto, com licença MIT. Fontes:
 - https://github.com/thesysdev/openui
@@ -67,4 +70,17 @@ DOC e PPT complexos (protegidos, incomuns, corrompidos) podem falhar. Não há c
 - CA08: documentos persistem em IndexedDB no dispositivo.
 - CA09: não existem credenciais, uploads ou chamadas de IA embutidas.
 
-**Validação:** arquivos presentes e inspeção estática. Dependências npm não puderam ser instaladas neste ambiente sem acesso ao registry; build/browser/Android ainda exigem execução de testes reais após `npm install`.
+## CI, artefatos e validação
+
+Os workflows GitHub Actions foram adicionados em `.github/workflows/`:
+
+- `frontend-gates.yml`: executa testes, TypeScript, build Vite, smoke no Chromium (importação, persistência, segurança OpenUI, PWA offline) e verificação da ausência de backend. Disponibiliza o artifact `universal-reader-pwa` com o build estático.
+- `android-debug.yml`: ao publicar na `master` ou executar manualmente, gera o projeto Capacitor e compila APK de debug (artifact `universal-reader-android-debug`); não é um APK assinado para loja.
+- Android usa app ID `com.az1nn.papus`. O projeto Android é gerado no CI e não está versionado no repositório.
+
+### Evidências e gates
+
+O CI anterior à adição dos testes Playwright confirmou **9 testes de unidade PASS**, TypeScript e build Vite PASS, e verificação frontend-only PASS. A aprovação final depende dos testes atuais (incluindo navegador offline) e do build Android concluídos com sucesso no Actions.
+
+Para hospedar o PWA, use HTTPS no domínio raiz ou configure o `base` Vite e caminhos do manifest para subdiretórios. DOC/PPT legados têm fidelidade parcial; OCR e diagramação Office fiel continuam fora do escopo. Não há inferência GPT-6 embutida nem chave de API distribuída.
+
