@@ -29,10 +29,9 @@ const ReaderMetric = defineComponent({
 });
 
 /** Runtime real do OpenUI. Não executa HTML/JS fornecidos pelo modelo. */
+// Stack/Card in react-ui 0.18 do not expose an extendable union slot.
+// Register additional components without slot mutation; OpenUI handles typed
+// references in its existing general-purpose document container.
 export const documentLibrary = openuiLibrary.extend({
-  components: { add: [
-    { component: ReaderEvidence, slots: ['Stack.children', 'Card.children'] },
-    { component: ReaderChecklist, slots: ['Stack.children', 'Card.children'] },
-    { component: ReaderMetric, slots: ['Stack.children', 'Card.children'] }
-  ] }
+  components: { add: [ReaderEvidence, ReaderChecklist, ReaderMetric] }
 });
