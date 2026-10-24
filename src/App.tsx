@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { readLibrary, readFile, saveFile, removeStoredFile, type DocMeta } from './storage';
 import { ArrowDownToLine, BookOpenText, Check, ChevronRight, CloudOff, Copy, FilePlus2, FileSearch, FileText, FolderOpen, HardDrive, LoaderCircle, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UploadCloud, X } from 'lucide-react';
 import PdfViewer from './PdfViewer';
-import { DocumentUI, documentLibrary, documentPrompt } from '@reader/intelligent-ui';
+import { DocumentUI, SAFE_OPENUI_PROMPT, documentPrompt } from '@reader/intelligent-ui';
 import { findMatches, loadDocument, SUPPORTED_EXTENSIONS, type ParsedDocument } from './parsers';
 import { validateOpenUIProgram } from '@reader/intelligent-ui';
 
@@ -100,7 +100,7 @@ export default function App() {
     const prompt = documentPrompt(
       { name: current.name, text: current.text, pages: current.pages, slides: current.slides?.length },
       question,
-      documentLibrary.prompt({ preamble: 'Use apenas os componentes especificados.' })
+      SAFE_OPENUI_PROMPT
     );
     try { await navigator.clipboard.writeText(prompt); }
     catch { setError('Não foi possível copiar automaticamente. Utilize um navegador com HTTPS.'); }
