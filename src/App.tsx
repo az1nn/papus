@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { del, get, set } from 'idb-keyval';
+import { readLibrary, readFile, saveFile, removeStoredFile, type DocMeta } from './storage';
 import { ArrowDownToLine, BookOpenText, Check, ChevronRight, CloudOff, Copy, FilePlus2, FileSearch, FileText, FolderOpen, HardDrive, LoaderCircle, Menu, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UploadCloud, X } from 'lucide-react';
 import PdfViewer from './PdfViewer';
-import { DocumentUI, documentLibrary, documentPrompt } from '@reader/intelligent-ui';
+import { DocumentUI, SAFE_OPENUI_PROMPT, documentPrompt } from '@reader/intelligent-ui';
 import { findMatches, loadDocument, SUPPORTED_EXTENSIONS, type ParsedDocument } from './parsers';
+import { validateOpenUIProgram } from '@reader/intelligent-ui';
 
-type DocMeta = { id: string; name: string; bytes: number; kind: string; added: number };
 type Panel = 'library' | 'reader' | 'assistant';
 const LIMIT = 25 * 1024 * 1024;
 const INITIAL_QUESTIONS = ['Visão geral', 'Critérios de aceitação', 'Logs', 'Alertas'];
@@ -36,7 +36,7 @@ export default function App() {
 
   useEffect(() => {
     let live = true;
-    get<DocMeta[]>('reader:library').then((data) => { if (live) setLibrary(data ?? []); }).catch(() => { if (live) setError('Biblioteca local indisponível neste navegador.'); }).finally(() => { if (live) setLoadingLibrary(false); });
+    readLibrary().then((data) => { if (live) setLibrary(data); }).catch(() => { if (live) setError('Biblioteca local indisponível neste navegador.'); }).finally(() => { if (live) setLoadingLibrary(false); });
     const up = () => setOnline(true); const down = () => setOnline(false);
     window.addEventListener('online', up); window.addEventListener('offline', down);
     return () => { live = false; window.removeEventListener('online', up); window.removeEventListener('offline', down); };
@@ -46,7 +46,7 @@ export default function App() {
     const token = ++requested.current;
     setActiveId(meta.id); setPanel('reader'); setBusy(true); setError(''); setCurrent(null); setCustomProgram(''); setUiQuery(''); setSearch('');
     try {
-      const file = fileOverride ?? await get<File>(`reader:file:${meta.id}`);
+      const file = fileOverride ?? await readFile(meta.id);
       if (!file) throw new Error('Arquivo não encontrado no armazenamento local.');
       const parsed = await loadDocument(file, meta.id);
       if (token === requested.current) setCurrent(parsed);
@@ -62,12 +62,8 @@ export default function App() {
       if (file.size > LIMIT) { setError(`${file.name} ultrapassa 25 MB.`); continue; }
       const meta: DocMeta = { id: crypto.randomUUID(), name: file.name, bytes: file.size, kind: ext, added: Date.now() };
       try {
-        await set(`reader:file:${meta.id}`, file);
-        setLibrary((old) => {
-          const updated = [meta, ...old];
-          void set('reader:library', updated);
-          return updated;
-        });
+        const updated = await saveFile(meta, file);
+        setLibrary(updated);
         await openMeta(meta, file);
       } catch (e) { setError(e instanceof Error ? e.message : 'Falha ao salvar documento.'); }
     }
@@ -75,14 +71,16 @@ export default function App() {
   }
 
   async function removeFile(id: string) {
-    await del(`reader:file:${id}`);
-    setLibrary((old) => { const updated = old.filter((m) => m.id !== id); void set('reader:library', updated); return updated; });
-    if (activeId === id) { requested.current += 1; setCurrent(null); setActiveId(null); setCustomProgram(''); setError(''); }
+    try {
+      const updated = await removeStoredFile(id);
+      setLibrary(updated);
+      if (activeId === id) { requested.current += 1; setCurrent(null); setActiveId(null); setCustomProgram(''); setError(''); setBusy(false); }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Falha ao excluir documento local.'); }
   }
 
   async function downloadFile() {
     if (!activeId) return;
-    const file = await get<File>(`reader:file:${activeId}`);
+    const file = await readFile(activeId);
     if (!file) { setError('Original não disponível.'); return; }
     const url = URL.createObjectURL(file);
     const a = document.createElement('a'); a.href = url; a.download = file.name; a.click();
@@ -102,7 +100,7 @@ export default function App() {
     const prompt = documentPrompt(
       { name: current.name, text: current.text, pages: current.pages, slides: current.slides?.length },
       question,
-      documentLibrary.prompt({ preamble: 'Use apenas os componentes especificados.' })
+      SAFE_OPENUI_PROMPT
     );
     try { await navigator.clipboard.writeText(prompt); }
     catch { setError('Não foi possível copiar automaticamente. Utilize um navegador com HTTPS.'); }
@@ -110,7 +108,8 @@ export default function App() {
 
   function applyProgram() {
     if (!current) return;
-    if (programDraft.length > 50000) { setError('Programa OpenUI ultrapassa 50.000 caracteres.'); return; }
+    const validation = validateOpenUIProgram(programDraft);
+    if (!validation.ok) { setError(validation.reason); return; }
     setCustomProgram(programDraft.trim());
     setShowEditor(false);
     setPanel('assistant');
