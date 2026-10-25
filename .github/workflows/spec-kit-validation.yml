@@ -1,0 +1,48 @@
+name: spec-kit-validation
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.specify/**'
+      - '.github/skills/speckit-*/**'
+      - 'AGENTS.md'
+      - 'docs/spec-kit-setup.md'
+      - '.github/workflows/spec-kit-validation.yml'
+  pull_request:
+    paths:
+      - '.specify/**'
+      - '.github/skills/speckit-*/**'
+      - 'AGENTS.md'
+      - 'docs/spec-kit-setup.md'
+      - '.github/workflows/spec-kit-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Spec Kit templates, skills and shell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .specify/memory/constitution.md
+          grep -q 'Version:.*1.0.0' .specify/memory/constitution.md
+          test -s .specify/templates/spec-template.md
+          test -s .specify/templates/plan-template.md
+          test -s .specify/templates/tasks-template.md
+          for cmd in constitution specify clarify plan tasks analyze checklist implement converge; do
+            test -s ".github/skills/speckit-${cmd}/SKILL.md"
+          done
+          for script in .specify/scripts/bash/*.sh; do bash -n "$script"; done
+      - name: Verify official Specify CLI is available
+        uses: astral-sh/setup-uv@v6
+      - name: Install and check CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv tool install specify-cli
+          specify version
