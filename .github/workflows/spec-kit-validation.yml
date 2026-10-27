@@ -8,14 +8,22 @@ on:
       - '.github/skills/speckit-*/**'
       - 'AGENTS.md'
       - 'docs/spec-kit-setup.md'
-      - '.github/workflows/spec-kit-validation.yml'
+      - '.github/workflows/**'
+      - '.github/scripts/**'
+      - 'docs/adr/**'
+      - 'docs/architecture/**'
+      - 'specs/**'
   pull_request:
     paths:
       - '.specify/**'
       - '.github/skills/speckit-*/**'
       - 'AGENTS.md'
       - 'docs/spec-kit-setup.md'
-      - '.github/workflows/spec-kit-validation.yml'
+      - '.github/workflows/**'
+      - '.github/scripts/**'
+      - 'docs/adr/**'
+      - 'docs/architecture/**'
+      - 'specs/**'
 
 permissions:
   contents: read
@@ -25,6 +33,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify constitution metadata, approved decisions, and regression cases
+        shell: bash
+        env:
+          REQUIRE_PROPOSED: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 2 }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/validate_governance.py --self-test
+          if [[ "$REQUIRE_PROPOSED" == "true" ]]; then
+            python3 .github/scripts/validate_governance.py --require-proposed
+          else
+            python3 .github/scripts/validate_governance.py
+          fi
       - name: Check Spec Kit templates, skills and shell syntax
         shell: bash
         run: |
