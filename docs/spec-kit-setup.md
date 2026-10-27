@@ -1,6 +1,6 @@
 # Spec Kit adoption — Papus
 
-This repository includes a reviewed snapshot of the official [GitHub Spec Kit](https://github.com/github/spec-kit) templates, Bash helpers and GitHub Copilot skills in `.specify/` and `.github/skills/`, alongside the ratified Papus constitution. These files were adopted for an existing application on 2026-10-25; the application source was not regenerated.
+This repository includes a reviewed snapshot of the official [GitHub Spec Kit](https://github.com/github/spec-kit) templates, Bash helpers and GitHub Copilot skills in `.specify/` and `.github/skills/`, alongside the Papus constitution. The v2.0.0 amendment in draft PR #2 is **proposed**, not ratified; the constitution on `master` remains authoritative until explicit human approval and integration. These files were adopted for an existing application on 2026-10-25; the application source was not regenerated.
 
 ## Local Specify CLI installation
 
@@ -18,10 +18,10 @@ To adopt a fresh upstream Spec Kit release in a separate, reviewable branch, use
 
 ## Project gates
 
-- No dedicated backend, `/api/*`, document uploads or embedded LLM tokens.
+- No required proprietary application backend, hidden document-upload API, or embedded private LLM credentials. Remote inference is permitted only after specific revocable consent and secure public-client authentication.
 - Local-first import/read/search with declared DOC/PPT and PDF OCR limitations.
 - Typed OpenUI renderer; GPT-6 inference remains separately gated.
-- Run `npm run test`, `npm run build`, `npm run test:e2e` and applicable Android CI before claims of completion.
+- Apply risk-based checks from `docs/architecture/quality-gates.md`: run applicable tests, builds, E2E and Android validation for affected surfaces; preserve existing mandatory CI and bind results to the exact SHA.
 - Keep spec → plan → tasks → evidence and CI SHA linkage in PRs.
 
 The copied scaffold is based on upstream project files (MIT license). Upgrades should be synchronized using the official CLI, with peer review and without claiming local CLI installation from the presence of files.
