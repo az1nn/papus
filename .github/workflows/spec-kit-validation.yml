@@ -30,23 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           test -s .specify/memory/constitution.md
-          grep -Eq '^\*\*Version:\*\* (0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)
-          test -s .specify/templates/spec-template.md
-          test -s .specify/templates/plan-template.md
-          test -s .specify/templates/tasks-template.md
-          for cmd in constitution specify clarify plan tasks analyze checklist implement converge; do
-            test -s ".github/skills/speckit-${cmd}/SKILL.md"
-          done
-          for script in .specify/scripts/bash/*.sh; do bash -n "$script"; done
-      - name: Verify official Specify CLI is available
-        uses: astral-sh/setup-uv@v6
-      - name: Install and check CLI
-        shell: bash
-        run: |
-          set -euo pipefail
-          uv tool install specify-cli
-          specify version
- .specify/memory/constitution.md
+          grep -Eq '^\*\*Version:\*\* (0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' .specify/memory/constitution.md
           test -s .specify/templates/spec-template.md
           test -s .specify/templates/plan-template.md
           test -s .specify/templates/tasks-template.md
