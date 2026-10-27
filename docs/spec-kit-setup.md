@@ -25,3 +25,17 @@ To adopt a fresh upstream Spec Kit release in a separate, reviewable branch, use
 - Keep spec → plan → tasks → evidence and CI SHA linkage in PRs.
 
 The copied scaffold is based on upstream project files (MIT license). Upgrades should be synchronized using the official CLI, with peer review and without claiming local CLI installation from the presence of files.
+
+## CI hardening (draft PR #2)
+
+For changes to `.github/workflows/**`, the independent `workflow-lint` job runs pinned `rhysd/actionlint:1.7.12` against every workflow and verifies that malformed YAML is rejected. `spec-kit-validation` also triggers on `docs/adr/**`, `docs/architecture/**`, `specs/**` and `.github/scripts/**`, in addition to the Spec Kit scaffold and existing paths.
+
+To reproduce the constitutional checks locally in the proposal branch:
+
+```bash
+python3 .github/scripts/validate_governance.py --self-test
+python3 .github/scripts/validate_governance.py --require-proposed
+docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.12 -color
+```
+
+`--require-proposed` is enforced automatically on PR #2 and must not be used to infer ratification. Record the exact HEAD SHA, workflow run links and any missing required checks; maintainers must separately configure required status checks and reviews in GitHub branch protection before permitting merge. These checks validate governance metadata and CI syntax, not the normative quality of the constitutional choices.
