@@ -85,7 +85,7 @@ class ValidatorRegressionTests(unittest.TestCase):
             "**Ratified:** 2026-10-25 (original baseline)\n"
             "**Last Amended:** 2026-10-26\n"
             "**Status:** Proposed breaking amendment in draft PR #2; not ratified.\n"
-            "G1=B; G2=C; G3=C; G4=C; G5=C; G6=A; G7=B; G8=D\n",
+            "G1=B; G2=C; G3=C; G4=C; G5=A; G6=C; G7=B; G8=D\n",
             encoding="utf-8",
         )
         for name in [
@@ -97,7 +97,7 @@ class ValidatorRegressionTests(unittest.TestCase):
         ] + [f"docs/adr/ADR-{n:03d}.md" for n in range(1, 9)]:
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
-            body = "v2.0.0 G1=B G2=C G3=C G4=C G5=C G6=A G7=B G8=D\n"
+            body = "v2.0.0 G1=B G2=C G3=C G4=C G5=A G6=C G7=B G8=D\n"
             if name.endswith("/tasks.md"):
                 body += "- [ ] T08 Obtain ratification\n"
             path.write_text(body, encoding="utf-8")
@@ -113,7 +113,7 @@ class ValidatorRegressionTests(unittest.TestCase):
 
     def test_silent_decision_change_is_rejected(self) -> None:
         self.constitution.write_text(
-            self.constitution.read_text().replace("G6=A", "G6=B"), encoding="utf-8"
+            self.constitution.read_text().replace("G6=C", "G6=B"), encoding="utf-8"
         )
         self.assertTrue(any("G1-G8" in error for error in validate(self.root)))
 
