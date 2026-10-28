@@ -1,10 +1,10 @@
 # Plan — Constitutional governance v2.0.0
 
-**Branch:** chore/spec-kit-constitution-v1
-**PR:** #2 (must remain Draft)
-**Constitution Check:** Proposal only; MAJOR amendment resolves explicit v1.0.0 conflicts. Do not treat as ratified until human approval and merge.
+**Branch:** `chore/spec-kit-constitution-v1` (historical source branch)
+**PR:** [#2](https://github.com/az1nn/papus/pull/2) (merged 2026-10-28)
+**Constitution Check:** Ratified v2.0.0 on 2026-10-28 following explicit maintainer approval and merge. MAJOR amendment resolves prior v1.0.0 conflicts; runtime implementation is not implied.
 
-## Design
+## Design (historical implementation plan)
 - Amend eight constitutional principles and governance with the approved G1–G8 outcomes.
 - Record eight proposed ADRs for implementation choices; do not treat proposals as implemented.
 - Add owner-role contracts and risk-based gate selection matrix.
