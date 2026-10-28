@@ -1,9 +1,9 @@
 # Papus — Universal Reader AI Constitution
 
 **Version:** 2.0.0
-**Ratified:** 2026-10-25 (original baseline)
-**Last Amended:** 2026-10-26
-**Status:** Proposed breaking amendment in draft PR #2; not ratified until human review and integration.
+**Ratified:** 2026-10-28 (Constitution v2.0.0; human authorization recorded in PR #2)
+**Last Amended:** 2026-10-28 (ratification record; no normative change)
+**Status:** Ratified; human-approved on 2026-10-28 and integrated into master via PR #2.
 
 ## Constitutional decisions
 
@@ -61,7 +61,7 @@ Each domain MUST have versioned boundaries, an accountable owner role, acceptanc
 
 The constitution governs invariants; ADRs govern replaceable technical decisions; specs govern behavior and acceptance; plans/tasks govern implementation. The domain contract and ownership registry is versioned in `docs/architecture/domain-ownership.md`. ADRs in `docs/adr/` are proposed until independently accepted. A Constitution Check is mandatory in every spec and plan; conflicts with a MUST stop implementation until approved resolution.
 
-Amendments MUST document rationale, migration impact, affected artifacts, test requirements and SemVer. MAJOR changes break prior normative rules, MINOR adds compatible obligations, PATCH clarifies without changing obligations. Dedicated PR and human approval are required for constitutional amendments. No draft PR, passing CI, or autonomous agent action ratifies an amendment. This v2.0.0 text is proposed in PR #2 and becomes authoritative only after approved integration.
+Amendments MUST document rationale, migration impact, affected artifacts, test requirements and SemVer. MAJOR changes break prior normative rules, MINOR adds compatible obligations, PATCH clarifies without changing obligations. Dedicated PR and human approval are required for constitutional amendments. No draft PR, passing CI, or autonomous agent action ratifies an amendment. This v2.0.0 text was approved by the maintainer on 2026-10-28 and integrated into master via [PR #2](https://github.com/az1nn/papus/pull/2), merge commit `6475c072fa3ee2423055bc0c29f1ad0beb35c1dc`. The status/date correction does not modify any normative requirement.
 
 ## Change impact and non-claims
 

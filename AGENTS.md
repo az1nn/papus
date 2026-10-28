@@ -1,6 +1,6 @@
 # Papus — agent instructions
 
-Read `.specify/memory/constitution.md` before modifying the repository. The v2.0.0 text in draft PR #2 is a **proposed amendment**, not a ratified master policy. Do not claim the proposal is live until human-approved integration.
+Read `.specify/memory/constitution.md` before modifying the repository. Constitution v2.0.0 was **ratified on 2026-10-28** after explicit maintainer approval and merged into `master` via [PR #2](https://github.com/az1nn/papus/pull/2). It is the active governance policy. Ratification does **not** imply that proposed runtime features are implemented or that unaccepted ADRs are automatically accepted.
 
 ## Workflow and precedence
 1. Reconcile branch, PRs, owners, concurrent claims and CI against real GitHub state.

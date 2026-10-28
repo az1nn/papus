@@ -1,3 +1,9 @@
+# Archived handoff — superseded 2026-10-28
+
+The content below captures **historical Draft PR #2 state** from 2026-10-27 and must not be interpreted as the current state. The maintainer ratified Constitution v2.0.0 on 2026-10-28; [PR #2](https://github.com/az1nn/papus/pull/2) was merged as `6475c072fa3ee2423055bc0c29f1ad0beb35c1dc`, followed by [PR #3](https://github.com/az1nn/papus/pull/3) as `4d23163a0e7d39d7decc21296fdd50ab7143e52e`. See `.specify/memory/constitution.md` and `specs/001-constitution-v2/tasks.md` for the active ratification record. Preserve the remainder as original historical evidence.
+
+---
+
 # CAVEMAN HANDOFF v1 — Papus Constitution v2.0.0
 
 APP: Papus (Universal Reader AI)
