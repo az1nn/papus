@@ -1,0 +1,47 @@
+name: workflow-lint
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint all GitHub Actions workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --volume "$PWD:/repo:ro" \
+            --workdir /repo \
+            rhysd/actionlint:1.7.12 -color
+      - name: Prove malformed workflow is rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          if printf '%s\n' \
+              'name: Invalid' \
+              'on: [push]' \
+              'jobs:' \
+              '  verify:' \
+              '    runs-on: ubuntu-latest' \
+              '    steps:' \
+              '      - run: echo ok' \
+              ' invalid: [' \
+            | docker run --rm -i rhysd/actionlint:1.7.12 - >/dev/null 2>&1; then
+            echo "::error::actionlint accepted intentionally invalid workflow"
+            exit 1
+          fi
+          echo "PASS: invalid workflow rejected"

@@ -1,0 +1,68 @@
+name: spec-kit-validation
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.specify/**'
+      - '.github/skills/speckit-*/**'
+      - 'AGENTS.md'
+      - 'docs/spec-kit-setup.md'
+      - '.github/workflows/**'
+      - '.github/scripts/**'
+      - 'docs/adr/**'
+      - 'docs/architecture/**'
+      - 'specs/**'
+  pull_request:
+    paths:
+      - '.specify/**'
+      - '.github/skills/speckit-*/**'
+      - 'AGENTS.md'
+      - 'docs/spec-kit-setup.md'
+      - '.github/workflows/**'
+      - '.github/scripts/**'
+      - 'docs/adr/**'
+      - 'docs/architecture/**'
+      - 'specs/**'
+
+permissions:
+  contents: read
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify constitution metadata, approved decisions, and regression cases
+        shell: bash
+        env:
+          REQUIRE_PROPOSED: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 2 }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/validate_governance.py --self-test
+          if [[ "$REQUIRE_PROPOSED" == "true" ]]; then
+            python3 .github/scripts/validate_governance.py --require-proposed
+          else
+            python3 .github/scripts/validate_governance.py
+          fi
+      - name: Check Spec Kit templates, skills and shell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .specify/memory/constitution.md
+          grep -Eq '^\*\*Version:\*\* (0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' .specify/memory/constitution.md
+          test -s .specify/templates/spec-template.md
+          test -s .specify/templates/plan-template.md
+          test -s .specify/templates/tasks-template.md
+          for cmd in constitution specify clarify plan tasks analyze checklist implement converge; do
+            test -s ".github/skills/speckit-${cmd}/SKILL.md"
+          done
+          for script in .specify/scripts/bash/*.sh; do bash -n "$script"; done
+      - name: Verify official Specify CLI is available
+        uses: astral-sh/setup-uv@v6
+      - name: Install and check CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv tool install specify-cli
+          specify version
