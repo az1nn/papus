@@ -7,7 +7,7 @@ Decision record: G1=B G2=Other G3=A G4=Other G5=B G6=C G7=C G8=C; R1=Other (PWA 
 - [x] M0.1 Reconcile master and Constitution v2.0.0; record decisions R1–R5 and preserve G1–G8.
 - [x] M0.2 Update SPEC, plan and tasks; resolve C01–C05 as documented design decisions.
 - [x] M0.3 Update ADR-MD-001..003 and add ADR-MD-004..005.
-- [ ] M0.4 Verify M0 documentation CI at exact PR head and collect evidence.
+- [x] M0.4 Verify M0 documentation CI at exact PR head and collect evidence. Initial checks at `871b8f04599d9b2236daa29f8c224a6dc9a3d667`: [Spec Kit](https://github.com/az1nn/papus/actions/runs/40874183200) PASS; [frontend](https://github.com/az1nn/papus/actions/runs/40874183108) PASS. Revalidate exact HEAD after this evidence-only commit; final evidence belongs in PR discussion.
 - [ ] M0.5 Obtain explicit authorization for M1–M5 functional implementation in a separate approval.
 
 ## M1 — Canonical core, Source, explicit file operations
