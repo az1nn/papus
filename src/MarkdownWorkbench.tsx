@@ -10,6 +10,10 @@ function message(error: unknown): string {
 export default function MarkdownWorkbench() {
   const [session, setSession] = useState<FileSession>(() => sessionFromBytes('sem-titulo.md', new Uint8Array()));
   const [version, setVersion] = useState(0);
+  const [previewState, setPreviewState] = useState(() => {
+    const doc = session.document;
+    return { document: doc, text: doc.text, revision: doc.revision };
+  });
   const [notice, setNotice] = useState('Documento local. Nenhum salvamento automático.');
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<'source' | 'preview' | 'split'>('split');
@@ -19,6 +23,17 @@ export default function MarkdownWorkbench() {
   const composing = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const doc = session.document;
+  // Parsing untrusted/large Markdown must not block each Source keystroke.
+  // A stale Preview remains read-only for patch purposes: document.apply rejects its revision.
+  useEffect(() => {
+    const handle = window.setTimeout(() => setPreviewState({
+      document: doc, text: doc.text, revision: doc.revision
+    }), 180);
+    return () => window.clearTimeout(handle);
+  }, [doc, version]);
+  const effectivePreview = previewState.document === doc
+    ? previewState : { document: doc, text: '', revision: doc.revision };
+  const previewPending = effectivePreview.revision !== doc.revision;
   const diff = diffOpen ? compareSaved(doc.baseline, doc.text) : null;
   const refresh = () => setVersion(n => n + 1);
 
@@ -115,8 +130,8 @@ export default function MarkdownWorkbench() {
             if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'y') { e.preventDefault(); history('redo'); } }} />
       </section>
       <section className="md-preview-host" aria-label="Preview Markdown">
-        <strong>Preview seguro</strong>
-        <PreviewFrame text={doc.text} revision={doc.revision}
+        <strong>Preview seguro {previewPending ? '· atualizando…' : ''}</strong>
+        <PreviewFrame text={effectivePreview.text} revision={effectivePreview.revision}
           onReject={reason => setNotice(reason)}
           onPatch={patch => { const result = doc.apply(patch); if (!result.ok) setNotice(result.reason); else setNotice('Correção textual aplicada ao Source, ainda não salva.'); refresh(); }} />
       </section>
