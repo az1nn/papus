@@ -59,3 +59,14 @@ test('installed Markdown PWA can edit while offline', async ({ page, context, br
   await page.locator('#markdown-source').fill('# Offline\n');
   await expect(page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]').locator('h1')).toHaveText('Offline');
 });
+
+test('Mermaid renders as an isolated local SVG data image', async ({ page }) => {
+  await page.goto('/markdown');
+  const fence = String.fromCharCode(96).repeat(3);
+  await page.locator('#markdown-source').fill(fence + 'mermaid\ngraph TD\n  A-->B\n' + fence);
+  const preview = page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]');
+  const image = preview.locator('img.md-mermaid-image');
+  await expect(image).toBeVisible({ timeout: 30_000 });
+  const src = await image.getAttribute('src');
+  expect(src).toMatch(/^data:image\/svg\+xml/);
+});

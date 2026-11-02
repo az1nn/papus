@@ -37,6 +37,11 @@ function safeAnchor(href?: string): string | null {
   return href && /^#[A-Za-z0-9_-]+$/.test(href) ? href : null;
 }
 export function parsePreview(source: string): RenderResult {
+  if (source.length > 1_048_576) return {
+    html: '<p>Preview pausado: documento grande. Todo o Source permanece intacto.</p>',
+    spans: [], warnings: ['Preview acima de 1 MiB desabilitado sem truncar o documento.'],
+    diagrams: []
+  };
   const spans: TextSpan[] = [];
   const warnings: string[] = [];
   const diagrams: string[] = [];
@@ -79,6 +84,10 @@ export function parsePreview(source: string): RenderResult {
           }
           const index = diagrams.push(value) - 1;
           return '<div class="md-mermaid-slot" data-diagram="' + index + '"><pre>Renderizando Mermaid offline…</pre></div>';
+        }
+        if (value.length > 100_000) {
+          warnings.push('Realce desabilitado para código grande; conteúdo preservado.');
+          return '<pre><code>' + escapeHtml(value) + '</code></pre>';
         }
         const known = hljs.getLanguage(language);
         const highlighted = known ? hljs.highlight(value, { language, ignoreIllegals: true }).value : escapeHtml(value);

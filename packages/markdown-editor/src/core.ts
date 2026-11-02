@@ -53,11 +53,13 @@ export function validPatchRange(text: string, start: number, end: number): boole
   return start <= end && validBoundary(text, start) && validBoundary(text, end);
 }
 
+type HistoryEntry = { start: number; removed: string; inserted: string };
+
 export class MarkdownDocument {
   private textValue: string;
   private savedText: string;
   private rev = 0;
-  private history: string[];
+  private history: HistoryEntry[];
   private cursor = 0;
   private readonly firstBytes: Uint8Array;
   readonly bom: boolean;
@@ -67,7 +69,7 @@ export class MarkdownDocument {
     const data = decodeMarkdown(bytes);
     this.textValue = data.text;
     this.savedText = data.text;
-    this.history = [data.text];
+    this.history = [];
     this.firstBytes = bytes.slice();
     this.name = name;
     this.bom = data.bom;
@@ -84,7 +86,7 @@ export class MarkdownDocument {
   get lineEndings(): LineEndings { return countEndings(this.textValue); }
   get originalBytes(): Uint8Array { return this.firstBytes.slice(); }
   get canUndo(): boolean { return this.cursor > 0; }
-  get canRedo(): boolean { return this.cursor < this.history.length - 1; }
+  get canRedo(): boolean { return this.cursor < this.history.length; }
 
   get snapshot(): Snapshot {
     return {
@@ -102,10 +104,12 @@ export class MarkdownDocument {
       return { ok: false, reason: 'Texto original divergiu.' };
     const result = this.textValue.slice(0, patch.start) + patch.text + this.textValue.slice(patch.end);
     if (result === this.textValue) return { ok: true, revision: this.rev };
-    this.history = this.history.slice(0, this.cursor + 1);
-    this.history.push(result);
+    this.history = this.history.slice(0, this.cursor);
+    this.history.push({
+      start: patch.start, removed: this.textValue.slice(patch.start, patch.end), inserted: patch.text
+    });
     if (this.history.length > 100) this.history.shift();
-    this.cursor = this.history.length - 1;
+    this.cursor = this.history.length;
     this.textValue = result;
     this.rev++;
     return { ok: true, revision: this.rev };
@@ -117,14 +121,18 @@ export class MarkdownDocument {
 
   undo(): boolean {
     if (!this.canUndo) return false;
-    this.textValue = this.history[--this.cursor];
+    const entry = this.history[--this.cursor];
+    this.textValue = this.textValue.slice(0, entry.start) + entry.removed +
+      this.textValue.slice(entry.start + entry.inserted.length);
     this.rev++;
     return true;
   }
 
   redo(): boolean {
     if (!this.canRedo) return false;
-    this.textValue = this.history[++this.cursor];
+    const entry = this.history[this.cursor++];
+    this.textValue = this.textValue.slice(0, entry.start) + entry.inserted +
+      this.textValue.slice(entry.start + entry.removed.length);
     this.rev++;
     return true;
   }
