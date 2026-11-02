@@ -80,3 +80,76 @@ test('Markdown route does not fetch Universal Reader document modules', async ({
   await expect(page.locator('#markdown-source')).toBeVisible();
   expect(scriptRequests.some(url => /\/assets\/App-[^/]+\.js/.test(url))).toBe(false);
 });
+
+
+test('browser file-picker adapter saves only after confirmed write and detects external edits', async ({ page }) => {
+  await page.addInitScript(() => {
+    const state = { content: '# Original', deny: false, writes: 0 };
+    const handle = {
+      name: 'opened.md',
+      getFile: async () => new File([state.content], 'opened.md', { type: 'text/markdown' }),
+      createWritable: async () => ({
+        write: async (bytes: Uint8Array) => {
+          if (state.deny) throw new Error('permission denied');
+          state.content = new TextDecoder().decode(bytes);
+          state.writes++;
+        },
+        close: async () => {},
+        abort: async () => {}
+      })
+    };
+    Object.assign(window, { __markdownMock: state, showOpenFilePicker: async () => [handle] });
+  });
+  await page.goto('/markdown');
+  await page.getByRole('button', { name: 'Abrir', exact: true }).click();
+  await expect(page.locator('#markdown-source')).toHaveValue('# Original');
+  await page.locator('#markdown-source').fill('# Nova versão');
+  await page.getByRole('button', { name: 'Salvar', exact: true }).click();
+  await expect(page.getByRole('status').first()).toContainText('Salvo: gravação local confirmada.');
+  const firstWrite = await page.evaluate(() => (window as unknown as {
+    __markdownMock: { content: string; writes: number }
+  }).__markdownMock);
+  expect(firstWrite.content).toBe('# Nova versão');
+  expect(firstWrite.writes).toBe(1);
+
+  // A browser picker handle can return changed bytes after a file is opened.
+  await page.evaluate(() => {
+    (window as unknown as { __markdownMock: { content: string } }).__markdownMock.content = '# Externo';
+  });
+  await page.locator('#markdown-source').fill('# Nova versão local');
+  await page.getByRole('button', { name: 'Salvar', exact: true }).click();
+  await expect(page.getByRole('status').first()).toContainText('Conflito');
+  await expect(page.locator('.md-filename')).toContainText('não salvo');
+  const afterConflict = await page.evaluate(() => (window as unknown as {
+    __markdownMock: { content: string; writes: number }
+  }).__markdownMock);
+  expect(afterConflict.content).toBe('# Externo');
+  expect(afterConflict.writes).toBe(1);
+});
+
+test('invalid UTF-8 import is rejected without replacing current Source', async ({ page }) => {
+  await page.goto('/markdown');
+  await page.locator('#markdown-source').fill('# Keep');
+  page.once('dialog', dialog => void dialog.accept());
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'invalid.md', mimeType: 'text/markdown', buffer: Buffer.from([0xC3, 0x28])
+  });
+  await expect(page.locator('#markdown-source')).toHaveValue('# Keep');
+  await expect(page.getByRole('status').first()).toContainText('encoded data');
+});
+
+test('untrusted Markdown cannot execute HTML, URL, SVG or initiate outbound resource requests', async ({ page }) => {
+  const outbound: string[] = [];
+  page.on('request', req => { if (req.url().includes('attacker.invalid')) outbound.push(req.url()); });
+  await page.goto('/markdown');
+  await page.locator('#markdown-source').fill(
+    '<img src="https://attacker.invalid/a" onerror="alert(1)">\n\n' +
+    '[click here](javascript:alert(1))\n\n![remote](https://attacker.invalid/img)\n\n' +
+    '<svg><foreignObject><script>fetch("https://attacker.invalid/x")</script></foreignObject></svg>'
+  );
+  const preview = page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]');
+  await expect(preview.locator('.md-blocked-image')).toBeVisible();
+  expect(await preview.locator('img,script,svg,iframe,object').count()).toBeLessThanOrEqual(1);
+  await page.waitForTimeout(100);
+  expect(outbound).toEqual([]);
+});
