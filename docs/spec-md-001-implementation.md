@@ -1,0 +1,53 @@
+# SPEC-MD-001 — Implementation contracts and verification
+This document describes the draft PR #6 implementation, not a claim of product homologation.
+
+## Web-only integration
+Web PWA: open /markdown or the "Editor .md" navigation item. No native Android editor adapter. Existing reader routes remain unchanged.
+Reusable workspace package: packages/markdown-editor. The core has no React, network, backend or persistence side effects.
+
+## Canonical Source
+MarkdownDocument keeps a Unicode string, revision, saved baseline and UTF-8/BOM metadata.
+File import uses strict TextDecoder fatal mode; no invalid-byte replacement. Changes are localized UTF-16 offset patches, with surrogate and CRLF boundary guards. Undo/redo does not mark content persisted.
+Direct Save requires an existing File System Access handle and checks external bytes before overwrite. Successful stream close is required before reporting "saved". Save As uses explicit browser picker; unsupported browsers use download/export but report "download requested" and retain dirty state.
+No autosave, background recovery guarantee or implicit writes.
+
+## Preview trust boundary
+Parsed Markdown is rendered as a whitelist of HTML elements. Document HTML is escaped. URLs never auto-load remote resources. The Preview body is sanitized with DOMPurify before insertion into a sandboxed iframe with allow-scripts but never allow-same-origin. CSP denies network requests and privileged resources. The script capability is confined to plain-text correction messages.
+The parent accepts only messages from the exact iframe window, opaque origin "null", matching channel token, document revision, exact AST text span and expected substring. Structural, multiline and ambiguous patches are rejected without mutating canonical Source.
+GFM is parsed locally. KaTeX produces MathML. Highlight.js supports a fixed language allowlist. Mermaid is lazy-loaded, limited in size/count, configured with strict security, sanitized and converted into a data:image/svg+xml asset inside the sandbox. YAML is parsed locally and Source remains canonical.
+Security review of Mermaid versions, SVG sanitization and iframe injection remains a mandatory gate.
+
+## UI contract
+Desktop split ratio slider (25–75%). Mobile source/preview/split modes, keyboard labels, 320px layout and composition buffering. Diff is read-only/on-demand against the last *confirmed* saved baseline, with a bounded line-count guard.
+
+## Tests and evidence required before merge
+| Gate | Scope | Current classification |
+| --- | --- | --- |
+| CI-01 | Vitest, typecheck, build | PASS on code SHA ba2bcff4; repeat on latest document-only HEAD required |
+| CI-02 | UTF-8/BOM/LF/CRLF, Unicode, patch, source maps | Unit and browser regression PASS on ba2bcff4 |
+| CI-03 | XSS/URL/SVG/Mermaid/bridge negative cases | Automated negatives PASS; independent security review NOT VERIFIED |
+| CI-04 | Chromium / Firefox / WebKit browser matrix and API fallback | Three-browser automated matrix PASS on ba2bcff4; real Android browser input NOT VERIFIED |
+| CI-05 | Installed PWA offline | Markdown-specific offline PWA PASS on Chromium at ba2bcff4 |
+| CI-06 | Save/Save As/download/permissions/conflicts | Browser mocks and unit tests PASS; native picker permissions/TOCTOU NOT VERIFIED |
+| CI-07 | Universal Reader regression | Existing reader smoke and unit suite PASS on ba2bcff4 |
+| CI-08 | Exact HEAD | ba2bcff4 CI PASS; any later commit needs fresh verification |
+| CI-09 | CA01–CA12, CA-D01..D05 | Final owner signoff and selected device/API evidence pending |
+| CI-10 | Domain ownership & explicit merge authorization | PENDING; draft PR has no merge authorization |
+
+## Measured technical gates (2026-11-01)
+
+The PR #6 candidate at `ba2bcff474726b44bf8bd6ab1dd7ac1e67439a30` completed GitHub Actions frontend, Spec Kit, workflow lint, Android debug build and the three-browser Playwright matrix successfully. The original static entry contained approximately 940 KiB gzip before route splitting; the Markdown route at this checkpoint measured **252.0 KiB gzip** in the dedicated CI budget gate (target ≤300 KiB).
+
+On GitHub-hosted Ubuntu Chromium, a one-million-character document after initial Preview idle measured **p95 Source 45.6 ms** and **p95 Preview 344.5 ms** (targets 100/500 ms). Values describe that CI machine only, and the measurement test is now part of the browser matrix.
+
+A text edit is now confirmed against the exact immutable snapshot written, even if additional keystrokes occur during a native file picker or asynchronous file write. Invalid UTF-8 is rejected with a consistent user-facing message in Chromium, Firefox and WebKit. Untrusted Preview updates may use a token/revision-checked incremental text-only channel within an approved AST span; untrusted Markdown cannot grant network/file capabilities. Full reparse is retained for structural edits.
+
+### Acceptance boundary
+- CI-01, CI-02, CI-05, CI-07, CI-08: automated evidence available at the cited SHA.
+- CI-03: negative automated security cases PASS, but human security signoff and independent SVG/bridge review remain **NOT VERIFIED**.
+- CI-04: automated Chromium/Firefox/WebKit suite PASS; representative Android Chromium PWA and real touch/IME device usability remain **NOT VERIFIED**.
+- CI-06: unit/browser-mock permission/conflict cases PASS; real browser File System Access picker denial/revocation/overwrite behavior not exhaustively validated.
+- CI-09: acceptance criteria mapping and cross-domain signoff remain pending.
+- CI-10: named SECURITY/DATA/PLATFORM/QUALITY owners and **explicit future merge authorization** remain pending. PR #6 stays draft.
+
+See [the exact-head CI evidence](https://github.com/az1nn/papus/pull/6). Historical CI success is not automatically valid on any later commit. Security, performance and feature claims must not exceed reproduced evidence.

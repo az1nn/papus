@@ -29,6 +29,8 @@ jobs:
         run: npm run test
       - name: Typecheck and production bundle
         run: npm run build
+      - name: Enforce Markdown PWA initial JS budget
+        run: node scripts/verify-markdown-budget.mjs
       - name: Install Chromium browser
         run: npx playwright install --with-deps chromium
       - name: Browser smoke and offline PWA

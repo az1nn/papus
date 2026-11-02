@@ -1,0 +1,53 @@
+name: markdown-browser-matrix
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "src/MarkdownWorkbench.tsx"
+      - "src/PreviewFrame.tsx"
+      - "src/markdown.css"
+      - "packages/markdown-editor/**"
+      - "tests/markdown-*.test.ts"
+      - "e2e/markdown.pw.ts"
+      - "playwright.markdown.config.ts"
+      - "package.json"
+      - ".github/workflows/markdown-browser-matrix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: markdown-browser-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdown-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify source, types and build
+        run: npm run build
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Offline Markdown, Preview security and responsive E2E
+        run: npx playwright test --config playwright.markdown.config.ts --project=${{ matrix.browser }}
+      - name: Browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-browser-${{ matrix.browser }}-diagnostics
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

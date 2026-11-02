@@ -1,6 +1,6 @@
 # SPEC-MD-001 — Roadmap tasks
 
-Status: M0 documentary review authorized. M1–M5 implementation NOT authorized.
+Status: M0 merged in PR #5; M1–M5 implementation explicitly authorized 2026-11-01 in ONE draft PR #6. No merge authorized.
 Decision record: G1=B G2=Other G3=A G4=Other G5=B G6=C G7=C G8=C; R1=Other (PWA only), R2=A, R3=D, R4=C, R5=A.
 
 ## M0 — Documentary gate (separate draft PR)
@@ -8,7 +8,7 @@ Decision record: G1=B G2=Other G3=A G4=Other G5=B G6=C G7=C G8=C; R1=Other (PWA 
 - [x] M0.2 Update SPEC, plan and tasks; resolve C01–C05 as documented design decisions.
 - [x] M0.3 Update ADR-MD-001..003 and add ADR-MD-004..005.
 - [x] M0.4 Verify M0 documentation CI at exact PR head and collect evidence. Initial checks at `871b8f04599d9b2236daa29f8c224a6dc9a3d667`: [Spec Kit](https://github.com/az1nn/papus/actions/runs/40874183200) PASS; [frontend](https://github.com/az1nn/papus/actions/runs/40874183108) PASS. Revalidate exact HEAD after this evidence-only commit; final evidence belongs in PR discussion.
-- [ ] M0.5 Obtain explicit authorization for M1–M5 functional implementation in a separate approval.
+- [x] M0.5 Separate human authorization for functional M1–M5 received 2026-11-01; only draft PR #6, no merge approval.
 
 ## M1 — Canonical core, Source, explicit file operations
 - [ ] M1.1 Define typed canonical document and offset/patch contracts.
@@ -33,5 +33,28 @@ Decision record: G1=B G2=Other G3=A G4=Other G5=B G6=C G7=C G8=C; R1=Other (PWA 
 - [ ] M5.1 Implement optional diff without implicit persistence.
 - [ ] M5.2 Verify CA01–CA12 and CA-D01..D05 with exact-head test evidence.
 
+## Evidence discipline for PR #6
+- M1 initial checkpoint `93a41246777fa050d39a9213cb6f530b24ec2f42`: frontend-gates PASS at its exact SHA.
+- M2 checkpoint `59b378b2ef50a2e8990e25dad0664eaf582cbbd5`: frontend-gates PASS at its exact SHA.
+- M3 initial checkpoint `d0116e8f10f2ea2100866005a8cda215569c8642`: frontend-gates FAIL (rich-rendering tests). Restored renderer in `6066c42b589e165e85d8acbac0a3ff20cc8d1edf`; exact-head revalidation required.
+- M4 checkpoint `f7ed2b5e9ca04ee45db7983ee9154b3ff882a056`: inherited M3 test failure; not considered PASS.
+- M5: code and documentation submitted to same draft PR; tests and owner/security review required.
+- M1–M5 checkboxes intentionally remain unchecked until the relevant acceptance criteria are verifiably met. No merge authorization granted.
+
+
+## Evidence update — post-correction checkpoint (2026-11-01)
+
+**Code candidate:** ba2bcff474726b44bf8bd6ab1dd7ac1e67439a30. This is *not* a merge authorization or domain-owner signoff.
+
+- Bug fixed: concurrent editing during async Save/Save As no longer falsely clears the dirty flag; a snapshot is confirmed only after the corresponding write completes. Unit tests exercise save races, lock release and failed writes.
+- Source fixes: Unicode boundary changes and deterministic invalid UTF-8 errors without partial document replacement.
+- Security scope: isolated iframe, typed revision/token-checked Preview corrections, and a separate incremental text-render channel restricted to AST-approved nonstructural spans; structural changes still trigger a full render. Security owner assessment is still required.
+- Offline assets: Markdown route split from Universal Reader to avoid the legacy route's remote font CSS. The editor has an E2E no-third-party-assets regression.
+- Performance: Chromium GitHub Actions reference p95 **Source 45.6 ms** (budget 100 ms); **Preview 344.5 ms** (budget 500 ms) for 1,000,000 characters after idle. Build initial JS **252.0 KiB gzip** (budget 300 KiB); diagram dependencies remain lazy.
+- Exact-head runs for ba2bcff4: [frontend](https://github.com/az1nn/papus/actions/runs/41371747360) SUCCESS, [Android](https://github.com/az1nn/papus/actions/runs/41371747372) SUCCESS, [Spec Kit](https://github.com/az1nn/papus/actions/runs/41371747288) SUCCESS, [workflow-lint](https://github.com/az1nn/papus/actions/runs/41371747301) SUCCESS, [Chromium/Firefox/WebKit matrix](https://github.com/az1nn/papus/actions/runs/41371747424) SUCCESS.
+- The reference numbers are not claims about all user devices. Native browser picker permission and external-change edge cases beyond mocks, dependency/license review, security threat-model approval, named domain owner reviews and human merge authorization remain pending.
+
+**Next:** review security and owner gates; add any corrections to the same PR, rerun exact-HEAD CI; obtain separate merge permission. Keep PR #6 draft and unmerged.
+
 ## Handoff
-The initial documentation was merged in PR #3; this M0 PR updates planning only. R5=A means one FUTURE functional PR for M1–M5, not a merge or implementation authorization. M0.4 requires live CI evidence; M0.5 requires a separate user approval. No functional task may be checked until evidence exists.
+The initial documentation was merged in PR #3; this M0 PR updates planning only. R5=A means one FUTURE functional PR for M1–M5, not a merge or implementation authorization. M0.4 requires live CI evidence; M0.5 was separately authorized on 2026-11-01. No functional task may be checked until evidence exists. Final merge still requires separate explicit approval.
