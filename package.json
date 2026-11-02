@@ -1,7 +1,7 @@
 {
   "name": "universal-reader-ai",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -25,6 +25,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "@reader/intelligent-ui": "file:packages/intelligent-ui",
+    "@reader/markdown-editor": "file:packages/markdown-editor",
     "@openuidev/react-lang": "^1.0.0",
     "@openuidev/react-ui": "^0.18.0",
     "cfb": "^1.2.2",
