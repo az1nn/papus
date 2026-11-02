@@ -23,16 +23,16 @@ Desktop split ratio slider (25–75%). Mobile source/preview/split modes, keyboa
 ## Tests and evidence required before merge
 | Gate | Scope | Current classification |
 | --- | --- | --- |
-| CI-01 | Vitest, typecheck, build | Re-run exact PR HEAD |
-| CI-02 | UTF-8/BOM/LF/CRLF, Unicode, patch, source maps | Tests added; results per SHA |
-| CI-03 | XSS/URL/SVG/Mermaid/bridge negative cases | Unit/e2e added; full security review NOT VERIFIED |
-| CI-04 | Chromium / Firefox / WebKit browser matrix and API fallback | Chromium in current pipeline; others NOT VERIFIED |
-| CI-05 | Installed PWA offline | Existing Chromium smoke; editor-specific offline NOT VERIFIED |
-| CI-06 | Save/Save As/download/permissions/conflicts | Unit tested; cross-browser picker permissions NOT VERIFIED |
-| CI-07 | Universal Reader regression | Existing regression suite |
-| CI-08 | Exact HEAD | Required; earlier green is not final proof |
-| CI-09 | CA01–CA12, CA-D01..D05 | Pending final evidence |
-| CI-10 | Domain ownership & explicit merge authorization | PENDING; no merge authorized |
+| CI-01 | Vitest, typecheck, build | PASS on code SHA ba2bcff4; repeat on latest document-only HEAD required |
+| CI-02 | UTF-8/BOM/LF/CRLF, Unicode, patch, source maps | Unit and browser regression PASS on ba2bcff4 |
+| CI-03 | XSS/URL/SVG/Mermaid/bridge negative cases | Automated negatives PASS; independent security review NOT VERIFIED |
+| CI-04 | Chromium / Firefox / WebKit browser matrix and API fallback | Three-browser automated matrix PASS on ba2bcff4; real Android browser input NOT VERIFIED |
+| CI-05 | Installed PWA offline | Markdown-specific offline PWA PASS on Chromium at ba2bcff4 |
+| CI-06 | Save/Save As/download/permissions/conflicts | Browser mocks and unit tests PASS; native picker permissions/TOCTOU NOT VERIFIED |
+| CI-07 | Universal Reader regression | Existing reader smoke and unit suite PASS on ba2bcff4 |
+| CI-08 | Exact HEAD | ba2bcff4 CI PASS; any later commit needs fresh verification |
+| CI-09 | CA01–CA12, CA-D01..D05 | Final owner signoff and selected device/API evidence pending |
+| CI-10 | Domain ownership & explicit merge authorization | PENDING; draft PR has no merge authorization |
 
 ## Measured technical gates (2026-11-01)
 
