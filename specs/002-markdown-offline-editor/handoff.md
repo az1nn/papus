@@ -1,40 +1,44 @@
 # CAVEMAN HANDOFF v1 — Papus SPEC-MD-001
-APP: Papus Universal Reader PWA
-WORKSTREAM: Offline Markdown editor functional M1–M5
-STATE: Draft PR implementation with checkpoints; CI verification in progress
-MODE: RESUME / WATCH depending on current PR checks
-CANONICAL SOURCE: az1nn/papus (GitHub) + SPEC-MD-001 and ADR-MD-001..005
 
-BASE: master 85865d4a1c946de636805aa23fb510b968054220 (at initial reconciliation)
+APP: Papus Universal Reader Web PWA
+WORKSTREAM: Offline Markdown Source/Preview, implementation M1–M5
+STATE: Functional candidate in draft PR #6, exact-head automated CI passed at the last measured checkpoint; human review and merge gate pending
+MODE: WATCH (domain owner review and approval), after VERIFY-FIRST
+CANONICAL SOURCE: az1nn/papus, SPEC-MD-001 and ADR-MD-001..005
+
+BASE: master 85865d4a1c946de636805aa23fb510b968054220 (when branch opened)
 BRANCH: feat/spec-md-001-m1-m5-editor
 PR: https://github.com/az1nn/papus/pull/6
 SPEC: specs/002-markdown-offline-editor/{spec,plan,tasks}.md
+VERIFIED CODE SHA: ba2bcff474726b44bf8bd6ab1dd7ac1e67439a30
+NOTE: This handoff is a documentary change. Recheck exact PR HEAD after this handoff commit before claiming final CI success.
 
-DONE / EVIDENCE:
-- M0 documentary PR #5 merged; Constitution v2.0.0 active.
-- Human authorization 2026-11-01: M1–M5 implementation in one PR, milestone checkpoints, no automatic merge.
-- M1 source/core/files initial SHA 93a4124 — frontend-gates PASS.
-- M2 sandboxed Preview/text-only bridge initial SHA 59b378b — frontend-gates PASS.
-- M3 first rich renderer SHA d0116e8 — FAIL; earlier renderer unintentionally reinstated in tree; corrected at 6066c42. Do not classify corrected state PASS without its own run.
-- M4 responsive & IME checkpoint f7ed2b5 — initial run inherited M3 test failure.
-- M5 explicit on-demand diff, browser tests and integration documentation in progress.
+DONE:
+- M0 #5 merged. M0.5 explicit separate authorization 2026-11-01 for M1–M5 in one PR, not for merge.
+- M1 canonical UTF-8/BOM LF/CRLF preservation, Source adapter, snapshot-safe writes, concurrent-write lock, undo/redo.
+- M2 sandboxed Preview, source maps and revision-validated corrections. Subsequent optimization: authenticated incremental render of safe text spans, full render for structural edits.
+- M3 GFM, local Mermaid, KaTeX/MathML, syntax highlight, YAML with defensive rendering and negative tests.
+- M4 desktop pane split, mobile tabs, IME handling, 320px browser tests.
+- M5 read-only on-demand diff, three-browser E2E, expanded import/security/file mock tests, initial JS budget and 1 MiB performance benchmark.
+- No native Android editor or application backend.
 
-GATES / BLOCKERS:
-- M3/M4/M5 exact-head CI and browser security tests must complete.
-- Firefox/WebKit, mobile browser/IME and reference-machine performance budgets NOT VERIFIED until reproducible evidence.
-- Domain owner roles (SECURITY/PLATFORM/DATA/QUALITY) are not assigned to people; review remains pending.
-- No unapproved merge, force push, backend, remote inference or automatic saving.
+VERIFY:
+- At ba2bcff4: frontend 41371747360 SUCCESS; Android 41371747372 SUCCESS; Spec Kit 41371747288 SUCCESS; actionlint 41371747301 SUCCESS; browser matrix 41371747424 SUCCESS.
+- Browser performance (1,000,000 chars, reference Ubuntu Chromium): Source p95 45.6 ms (<100), Preview p95 344.5 ms (<500).
+- Markdown route initial JS 252.0 KiB gzip (<300).
+- No merge, master not modified.
 
-INVARIANTS:
-- Web PWA only editor. Existing Android reader must not regress.
-- Canonical Source; UTF-8/BOM and mixed line endings; direct write only by user action.
-- Isolated iframe with opaque origin, restrictive CSP, sanitized rendering, revision-checked plain-text corrections.
-- R1–R5, G1–G8 and Constitution 2.0.0 preserved.
+GATES:
+- SECURITY_OWNER review of iframe CSP/bridge, incremental render channel, Mermaid SVG handling, dependency/license status.
+- DATA_OWNER review of File System Access permission/overwrite races beyond mocks.
+- PLATFORM_OWNER review of real Android-browser PWA accessibility, touch and IME; Android debug build passed, not native editor parity.
+- QUALITY_OWNER final CA01–CA12/CA-D01..D05 evidence mapping and exact-head repeat CI.
+- Separate human merge authorization. Owner roles are not assigned to individuals and none may be inferred.
 
-NEXT:
-1. Check PR #6 head versus GitHub live state before editing.
-2. Retrieve CI job logs, repair actual failures and revalidate exact head.
-3. Run cross-browser/mobile security and acceptance evidence where available.
-4. Keep draft, request domain-owner and human merge approvals only after all gates pass.
+BLOCKERS: Unassigned owner approvals and merge authorization; security/license review and targeted device/API checks NOT VERIFIED.
 
-VERIFY-FIRST: REAL STATE > HANDOFF > MEMORY > CHAT. Do not mark tasks or gates PASS based on this handoff alone.
+INVARIANTS: REAL STATE > HANDOFF > MEMORY > CHAT; no automatic merge, backend, remote inference, autosave, unapproved Android editor, force push, or false PASS.
+
+NEXT: Compare current PR head to this verified SHA; inspect active jobs/reviews, close any technical failures, obtain owner signoff, seek explicit merge approval only after gates are green.
+
+VERIFY-FIRST: Check live GitHub state and all exact-head checks. Do not treat this handoff as proof of checks on a later commit.

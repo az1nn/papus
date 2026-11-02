@@ -41,5 +41,20 @@ Decision record: G1=B G2=Other G3=A G4=Other G5=B G6=C G7=C G8=C; R1=Other (PWA 
 - M5: code and documentation submitted to same draft PR; tests and owner/security review required.
 - M1–M5 checkboxes intentionally remain unchecked until the relevant acceptance criteria are verifiably met. No merge authorization granted.
 
+
+## Evidence update — post-correction checkpoint (2026-11-01)
+
+**Code candidate:** ba2bcff474726b44bf8bd6ab1dd7ac1e67439a30. This is *not* a merge authorization or domain-owner signoff.
+
+- Bug fixed: concurrent editing during async Save/Save As no longer falsely clears the dirty flag; a snapshot is confirmed only after the corresponding write completes. Unit tests exercise save races, lock release and failed writes.
+- Source fixes: Unicode boundary changes and deterministic invalid UTF-8 errors without partial document replacement.
+- Security scope: isolated iframe, typed revision/token-checked Preview corrections, and a separate incremental text-render channel restricted to AST-approved nonstructural spans; structural changes still trigger a full render. Security owner assessment is still required.
+- Offline assets: Markdown route split from Universal Reader to avoid the legacy route's remote font CSS. The editor has an E2E no-third-party-assets regression.
+- Performance: Chromium GitHub Actions reference p95 **Source 45.6 ms** (budget 100 ms); **Preview 344.5 ms** (budget 500 ms) for 1,000,000 characters after idle. Build initial JS **252.0 KiB gzip** (budget 300 KiB); diagram dependencies remain lazy.
+- Exact-head runs for ba2bcff4: [frontend](https://github.com/az1nn/papus/actions/runs/41371747360) SUCCESS, [Android](https://github.com/az1nn/papus/actions/runs/41371747372) SUCCESS, [Spec Kit](https://github.com/az1nn/papus/actions/runs/41371747288) SUCCESS, [workflow-lint](https://github.com/az1nn/papus/actions/runs/41371747301) SUCCESS, [Chromium/Firefox/WebKit matrix](https://github.com/az1nn/papus/actions/runs/41371747424) SUCCESS.
+- The reference numbers are not claims about all user devices. Native browser picker permission and external-change edge cases beyond mocks, dependency/license review, security threat-model approval, named domain owner reviews and human merge authorization remain pending.
+
+**Next:** review security and owner gates; add any corrections to the same PR, rerun exact-HEAD CI; obtain separate merge permission. Keep PR #6 draft and unmerged.
+
 ## Handoff
 The initial documentation was merged in PR #3; this M0 PR updates planning only. R5=A means one FUTURE functional PR for M1–M5, not a merge or implementation authorization. M0.4 requires live CI evidence; M0.5 was separately authorized on 2026-11-01. No functional task may be checked until evidence exists. Final merge still requires separate explicit approval.

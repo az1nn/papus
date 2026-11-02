@@ -34,4 +34,20 @@ Desktop split ratio slider (25–75%). Mobile source/preview/split modes, keyboa
 | CI-09 | CA01–CA12, CA-D01..D05 | Pending final evidence |
 | CI-10 | Domain ownership & explicit merge authorization | PENDING; no merge authorized |
 
-Security, performance and feature claims must not exceed observed test results. A green frontend build does not satisfy all CI-01..CI-10.
+## Measured technical gates (2026-11-01)
+
+The PR #6 candidate at `ba2bcff474726b44bf8bd6ab1dd7ac1e67439a30` completed GitHub Actions frontend, Spec Kit, workflow lint, Android debug build and the three-browser Playwright matrix successfully. The original static entry contained approximately 940 KiB gzip before route splitting; the Markdown route at this checkpoint measured **252.0 KiB gzip** in the dedicated CI budget gate (target ≤300 KiB).
+
+On GitHub-hosted Ubuntu Chromium, a one-million-character document after initial Preview idle measured **p95 Source 45.6 ms** and **p95 Preview 344.5 ms** (targets 100/500 ms). Values describe that CI machine only, and the measurement test is now part of the browser matrix.
+
+A text edit is now confirmed against the exact immutable snapshot written, even if additional keystrokes occur during a native file picker or asynchronous file write. Invalid UTF-8 is rejected with a consistent user-facing message in Chromium, Firefox and WebKit. Untrusted Preview updates may use a token/revision-checked incremental text-only channel within an approved AST span; untrusted Markdown cannot grant network/file capabilities. Full reparse is retained for structural edits.
+
+### Acceptance boundary
+- CI-01, CI-02, CI-05, CI-07, CI-08: automated evidence available at the cited SHA.
+- CI-03: negative automated security cases PASS, but human security signoff and independent SVG/bridge review remain **NOT VERIFIED**.
+- CI-04: automated Chromium/Firefox/WebKit suite PASS; representative Android Chromium PWA and real touch/IME device usability remain **NOT VERIFIED**.
+- CI-06: unit/browser-mock permission/conflict cases PASS; real browser File System Access picker denial/revocation/overwrite behavior not exhaustively validated.
+- CI-09: acceptance criteria mapping and cross-domain signoff remain pending.
+- CI-10: named SECURITY/DATA/PLATFORM/QUALITY owners and **explicit future merge authorization** remain pending. PR #6 stays draft.
+
+See [the exact-head CI evidence](https://github.com/az1nn/papus/pull/6). Historical CI success is not automatically valid on any later commit. Security, performance and feature claims must not exceed reproduced evidence.
