@@ -163,6 +163,9 @@ test('reference Chromium 1 MiB Source/Preview p95 performance budgets', async ({
   const input = '# Documento\n\n' + 'a'.repeat(1_000_000 - 13);
   await source.fill(input);
   await expect(source).toHaveValue(input);
+  // Benchmarks represent edits after idle: first wait for the initial full Preview.
+  await expect.poll(async () => await page.locator('iframe.md-preview-frame')
+    .getAttribute('data-render-revision'), { timeout: 30_000 }).toBe('1');
   const samples: Array<{ sourceMs: number; previewMs: number }> = [];
   for (let index = 0; index < 8; index++) {
     const timings = await page.evaluate(async () => {
