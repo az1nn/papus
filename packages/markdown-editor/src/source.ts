@@ -1,4 +1,4 @@
-import { MarkdownDocument, type PatchResult } from './core';
+import { MarkdownDocument, validPatchRange, type PatchResult } from './core';
 
 /** HTML textarea normalizes CRLF/CR to LF. Keep that projection out of canonical storage. */
 export function normalizedView(value: string): string {
@@ -36,6 +36,14 @@ export function applySourceInput(document: MarkdownDocument, nextVisible: string
   while (oldEnd > prefix && nextEnd > prefix && current[oldEnd - 1] === nextVisible[nextEnd - 1]) {
     oldEnd--; nextEnd--;
   }
+  // A common UTF-16 prefix may end halfway through a surrogate pair.
+  // Expand to a complete code point instead of silently rejecting legitimate emoji edits.
+  while (prefix > 0 && (!validPatchRange(current, prefix, prefix) ||
+          !validPatchRange(nextVisible, prefix, prefix))) prefix--;
+  // Likewise, a common suffix can begin at the low surrogate of a code point.
+  while (oldEnd < current.length && nextEnd < nextVisible.length &&
+      (!validPatchRange(current, oldEnd, oldEnd) ||
+       !validPatchRange(nextVisible, nextEnd, nextEnd))) { oldEnd++; nextEnd++; }
   const start = canonicalOffset(document.text, prefix);
   const end = canonicalOffset(document.text, oldEnd);
   const lineEnding = surroundingLineEnding(document.text, start);

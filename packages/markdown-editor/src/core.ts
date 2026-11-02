@@ -140,7 +140,7 @@ export class MarkdownDocument {
   toBytes(): Uint8Array { return encodeMarkdown(this.textValue, this.bom); }
 
   /** Only call when a direct user-authorized file write has completed successfully. */
-  confirmSaved(): void { this.savedText = this.textValue; }
+  confirmSaved(writtenText: string = this.textValue): void { this.savedText = writtenText; }
 
   /** A confirmed Save As may update the displayed filename. */
   rename(name: string): void { this.name = name; }

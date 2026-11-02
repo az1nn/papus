@@ -56,7 +56,7 @@ export default function MarkdownWorkbench() {
     setBusy(true);
     try {
       const status = mode === 'saveAs' ? await saveAs(session) : session.handle ? await saveDirect(session) : requestDownload(session);
-      setNotice(status === 'saved' ? 'Salvo: gravação local confirmada.' : 'Download solicitado. Não é confirmação de arquivo salvo.');
+      setNotice(status === 'saved' ? (session.document.dirty ? 'Versão anterior salva. Alterações posteriores ainda não foram salvas.' : 'Salvo: gravação local confirmada.') : 'Download solicitado. Não é confirmação de arquivo salvo.');
       refresh();
     } catch (error) { setNotice('Não salvo: ' + message(error)); }
     finally { setBusy(false); }
