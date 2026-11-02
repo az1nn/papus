@@ -14,12 +14,23 @@ function countEndings(text: string): LineEndings {
 
 export function decodeMarkdown(bytes: Uint8Array): { text: string; bom: boolean } {
   const bom = bytes.length >= 3 && bytes[0] === 239 && bytes[1] === 187 && bytes[2] === 191;
-  const text = new TextDecoder('utf-8', { fatal: true }).decode(bom ? bytes.subarray(3) : bytes);
-  if (text.includes('\uFEFF')) throw new Error('BOM inesperado no conteúdo do documento.');
+  const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bom ? bytes.subarray(3) : bytes);
   return { text, bom };
 }
 
+export function wellFormedUnicode(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF) {
+      const following = text.charCodeAt(++i);
+      if (!(following >= 0xDC00 && following <= 0xDFFF)) return false;
+    } else if (c >= 0xDC00 && c <= 0xDFFF) return false;
+  }
+  return true;
+}
+
 export function encodeMarkdown(text: string, bom: boolean): Uint8Array {
+  if (!wellFormedUnicode(text)) throw new Error('Texto contém surrogate UTF-16 inválido.');
   const value = new TextEncoder().encode(text);
   if (!bom) return value;
   const output = new Uint8Array(value.length + 3);
@@ -84,6 +95,7 @@ export class MarkdownDocument {
   }
 
   apply(patch: TextPatch): PatchResult {
+    if (!wellFormedUnicode(patch.text)) return { ok: false, reason: 'Unicode inválido; alteração recusada.' };
     if (patch.expectedRevision !== this.rev) return { ok: false, reason: 'Revisão desatualizada.' };
     if (!validPatchRange(this.textValue, patch.start, patch.end)) return { ok: false, reason: 'Intervalo UTF-16 inválido.' };
     if (patch.expectedText !== undefined && this.textValue.slice(patch.start, patch.end) !== patch.expectedText)

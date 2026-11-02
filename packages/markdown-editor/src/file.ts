@@ -9,6 +9,7 @@ export interface FileHandleLike {
   name: string;
   getFile(): Promise<File>;
   createWritable(): Promise<WritableStreamLike>;
+  isSameEntry?(other: FileHandleLike): Promise<boolean>;
 }
 type PickerWindow = Window & {
   showOpenFilePicker?: (options?: object) => Promise<FileHandleLike[]>;
@@ -59,6 +60,9 @@ export async function saveDirect(session: FileSession): Promise<SaveStatus> {
 export async function saveAs(session: FileSession, win: PickerWindow = window): Promise<SaveStatus> {
   if (!win.showSaveFilePicker) return requestDownload(session);
   const handle = await win.showSaveFilePicker({ suggestedName: session.document.name, types: [{ description: 'Markdown', accept: { 'text/markdown': ['.md'] } }] });
+  if (session.handle && (session.handle === handle ||
+      (handle.isSameEntry && await handle.isSameEntry(session.handle))))
+    throw new Error('Salvar como não pode sobrescrever silenciosamente o arquivo original. Use Salvar.');
   // File picker confirmation is an explicit user's choice; never mutate the original handle until success.
   const output = session.document.toBytes();
   const stream = await handle.createWritable();

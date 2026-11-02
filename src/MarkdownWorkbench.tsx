@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { compareSaved, fromLocalFile, openWithPicker, requestDownload, saveAs, saveDirect, sessionFromBytes, type FileSession } from '@reader/markdown-editor';
+import { applySourceInput, compareSaved, fromLocalFile, normalizedView, openWithPicker, requestDownload, saveAs, saveDirect, sessionFromBytes, type FileSession } from '@reader/markdown-editor';
 import PreviewFrame from './PreviewFrame';
 import './markdown.css';
 
@@ -62,7 +62,7 @@ export default function MarkdownWorkbench() {
     finally { setBusy(false); }
   }
   function write(text: string) {
-    const result = doc.replace(text);
+    const result = applySourceInput(doc, text);
     if (!result.ok) setNotice(result.reason);
     refresh();
   }
@@ -107,7 +107,7 @@ export default function MarkdownWorkbench() {
     <main className={'md-workspace md-view-' + view} style={{ '--md-split': split + '%' } as React.CSSProperties}>
       <section className="md-source">
         <label htmlFor="markdown-source">Source — Markdown canônico</label>
-        <textarea id="markdown-source" spellCheck={false} value={compositionDraft ?? doc.text}
+        <textarea id="markdown-source" spellCheck={false} value={compositionDraft ?? normalizedView(doc.text)}
           onCompositionStart={() => { composing.current = true; }}
           onCompositionEnd={e => { composing.current = false; setCompositionDraft(null); write(e.currentTarget.value); }}
           onChange={e => { if (composing.current) setCompositionDraft(e.currentTarget.value); else write(e.currentTarget.value); }}
