@@ -8,6 +8,7 @@ export default function PreviewFrame({ text, revision, onPatch, onReject }: Prop
   const iframe = useRef<HTMLIFrameElement>(null);
   const token = useRef(crypto.randomUUID().replace(/-/g, ''));
   const [error, setError] = useState('');
+  const [richHtml, setRichHtml] = useState<{ revision: number; html: string } | null>(null);
   const rendered = useMemo(() => {
     try {
       const result = parsePreview(text);
@@ -19,10 +20,51 @@ export default function PreviewFrame({ text, revision, onPatch, onReject }: Prop
       return { ...result, html: clean, error: '' };
     } catch (reason) {
       return { html: '<p>Preview indisponível. O Source não foi alterado.</p>', spans: [],
-        warnings: [], error: reason instanceof Error ? reason.message : 'Erro ao analisar Markdown.' };
+        warnings: [], diagrams: [], error: reason instanceof Error ? reason.message : 'Erro ao analisar Markdown.' };
     }
   }, [text]);
-  const doc = useMemo(() => frameHtml(rendered.html, token.current, revision), [rendered.html, revision]);
+  useEffect(() => {
+    let live = true;
+    setRichHtml({ revision, html: rendered.html });
+    if (rendered.diagrams.length === 0) return () => { live = false; };
+    async function renderDiagrams() {
+      try {
+        const mermaid = (await import('mermaid')).default;
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', htmlLabels: false,
+          theme: 'neutral', maxTextSize: 20_000 });
+        let html = rendered.html;
+        for (const [index, diagram] of rendered.diagrams.entries()) {
+          if (!live) return;
+          const slot = new RegExp('<div class="md-mermaid-slot" data-diagram="' + index + '">[\\s\\S]*?<\\/div>');
+          if (index >= 5) {
+            html = html.replace(slot, '<pre>Limite de 5 diagramas por documento nesta visualização.</pre>');
+            continue;
+          }
+          try {
+            await mermaid.parse(diagram);
+            const result = await mermaid.render('papus-md-' + token.current + '-' + revision + '-' + index, diagram);
+            const svg = DOMPurify.sanitize(result.svg, {
+              USE_PROFILES: { svg: true, svgFilters: true },
+              FORBID_TAGS: ['script', 'foreignObject', 'a', 'image', 'style'],
+              FORBID_ATTR: ['onerror', 'onload', 'onclick', 'href', 'xlink:href']
+            });
+            const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+            html = html.replace(slot, '<img class="md-mermaid-image" alt="Diagrama Mermaid" src="' + url + '" />');
+          } catch {
+            html = html.replace(slot, '<pre>Diagrama Mermaid inválido ou bloqueado. Edite-o no Source.</pre>');
+          }
+        }
+        if (live) setRichHtml({ revision, html });
+      } catch {
+        if (live) setError('Renderização Mermaid local indisponível; Source preservado.');
+      }
+    }
+    void renderDiagrams();
+    return () => { live = false; };
+  }, [revision, rendered.html, rendered.diagrams]);
+
+  const activeHtml = richHtml?.revision === revision ? richHtml.html : rendered.html;
+  const doc = useMemo(() => frameHtml(activeHtml, token.current, revision), [activeHtml, revision]);
 
   useEffect(() => {
     const receive = (event: MessageEvent) => {
