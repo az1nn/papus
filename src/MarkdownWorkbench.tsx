@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { fromLocalFile, openWithPicker, requestDownload, saveAs, saveDirect, sessionFromBytes, type FileSession } from '@reader/markdown-editor';
+import { compareSaved, fromLocalFile, openWithPicker, requestDownload, saveAs, saveDirect, sessionFromBytes, type FileSession } from '@reader/markdown-editor';
 import PreviewFrame from './PreviewFrame';
 import './markdown.css';
 
@@ -15,9 +15,11 @@ export default function MarkdownWorkbench() {
   const [view, setView] = useState<'source' | 'preview' | 'split'>('split');
   const [split, setSplit] = useState(50);
   const [compositionDraft, setCompositionDraft] = useState<string | null>(null);
+  const [diffOpen, setDiffOpen] = useState(false);
   const composing = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const doc = session.document;
+  const diff = diffOpen ? compareSaved(doc.baseline, doc.text) : null;
   const refresh = () => setVersion(n => n + 1);
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export default function MarkdownWorkbench() {
     try {
       const incoming = await fromLocalFile(file);
       setSession(incoming);
+      setDiffOpen(false);
       setNotice('Arquivo importado em memória. Nenhuma gravação realizada.');
     } catch (error) { setNotice(message(error)); }
     finally { setBusy(false); if (input.current) input.current.value = ''; }
@@ -44,7 +47,7 @@ export default function MarkdownWorkbench() {
     setBusy(true);
     try {
       const incoming = await openWithPicker();
-      if (incoming) { setSession(incoming); setNotice('Arquivo local aberto sem gravar.'); }
+      if (incoming) { setSession(incoming); setDiffOpen(false); setNotice('Arquivo local aberto sem gravar.'); }
       else input.current?.click();
     } catch (error) { setNotice(message(error)); }
     finally { setBusy(false); }
@@ -74,11 +77,18 @@ export default function MarkdownWorkbench() {
       <span className="md-filename" title={doc.name}>{doc.name}{doc.dirty ? ' • não salvo' : ''}</span>
       <div className="md-actions">
         <input ref={input} type="file" accept=".md,.markdown,text/markdown" hidden onChange={event => { const file = event.currentTarget.files?.[0]; if (file) void openFile(file); }} />
+        <button disabled={busy} onClick={() => {
+          if (doc.dirty && !window.confirm('Descartar alterações locais?')) return;
+          setSession(sessionFromBytes('sem-titulo.md', new Uint8Array()));
+          setDiffOpen(false); setCompositionDraft(null);
+          setNotice('Novo documento em memória. Nada foi salvo.');
+        }}>Novo</button>
         <button disabled={busy} onClick={() => void openDisk()}>Abrir</button>
         <button disabled={busy} onClick={() => history('undo')} aria-label="Desfazer" title="Ctrl+Z">Desfazer</button>
         <button disabled={busy} onClick={() => history('redo')} aria-label="Refazer" title="Ctrl+Y">Refazer</button>
         <button disabled={busy} onClick={() => void save('save')}>Salvar</button>
         <button disabled={busy} onClick={() => void save('saveAs')}>Salvar como</button>
+        <button disabled={busy} aria-pressed={diffOpen} onClick={() => setDiffOpen(x => !x)}>Diff opcional</button>
       </div>
     </header>
     <div className="md-status" role="status">{notice} · {doc.lineEndings.crlf} CRLF / {doc.lineEndings.lf} LF · revisão {doc.revision}</div>
@@ -111,6 +121,15 @@ export default function MarkdownWorkbench() {
           onPatch={patch => { const result = doc.apply(patch); if (!result.ok) setNotice(result.reason); else setNotice('Correção textual aplicada ao Source, ainda não salva.'); refresh(); }} />
       </section>
     </main>
+    {diffOpen && <section className="md-diff" aria-label="Diff do último salvamento confirmado">
+      <strong>Diff contra a última gravação confirmada</strong>
+      {diff?.ok ? <>
+        <p>{diff.additions} linha(s) adicionada(s), {diff.removals} removida(s). Somente visualização.</p>
+        <pre>{diff.lines.map((line, i) => <span key={i} className={'md-diff-' + line.kind}>
+          {line.kind === 'added' ? '+ ' : line.kind === 'removed' ? '- ' : '  '}{line.text}
+        </span>)}</pre>
+      </> : <p>{diff?.reason}</p>}
+    </section>}
     <footer className="md-foot">PWA Web · Sem backend, autosave, Git ou envio remoto · UTF-8 {doc.bom ? 'com BOM' : 'sem BOM'}</footer>
   </div>;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { readLibrary, readFile, saveFile, removeStoredFile, type DocMeta } from './storage';
 import { ArrowDownToLine, BookOpenText, Check, ChevronRight, CloudOff, Copy, FilePlus2, FileSearch, FileText, FolderOpen, HardDrive, LoaderCircle, Menu, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UploadCloud, X } from 'lucide-react';
 import PdfViewer from './PdfViewer';
@@ -147,7 +148,7 @@ export default function App() {
     <input className="hidden-input" ref={picker} type="file" multiple accept=".html,.htm,.pdf,.doc,.docx,.ppt,.pptx" onChange={(e) => e.currentTarget.files && void addFiles(e.currentTarget.files)}/>
     <header className="topbar">
       <div className="brand"><div className="brand-logo"><BookOpenText size={22}/></div><div><strong>Universal<span>Reader</span></strong><small>AI DOCUMENT WORKSPACE</small></div></div>
-      <div className="topbar-right"><span className="version">LOCAL · v0.2</span><div className="connection">{online ? <><span className="online-indicator"/> Online</> : <><CloudOff size={14}/> Offline</>}</div><button className="primary import-button" onClick={() => picker.current?.click()}><FilePlus2 size={17}/> <span>Adicionar arquivo</span></button></div>
+      <div className="topbar-right">{!Capacitor.isNativePlatform() && <a className="md-entry-link" href="/markdown">Editor .md</a>}<span className="version">LOCAL · v0.2</span><div className="connection">{online ? <><span className="online-indicator"/> Online</> : <><CloudOff size={14}/> Offline</>}</div><button className="primary import-button" onClick={() => picker.current?.click()}><FilePlus2 size={17}/> <span>Adicionar arquivo</span></button></div>
     </header>
     <div className="mobile-nav"><button className={panel === 'library' ? 'selected' : ''} onClick={() => setPanel('library')}><FolderOpen size={17}/> Biblioteca</button><button className={panel === 'reader' ? 'selected' : ''} onClick={() => setPanel('reader')}><BookOpenText size={17}/> Leitor</button><button className={panel === 'assistant' ? 'selected' : ''} onClick={() => setPanel('assistant')}><Sparkles size={17}/> Assistente</button></div>
     <div className="workspace">

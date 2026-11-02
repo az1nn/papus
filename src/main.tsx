@@ -1,11 +1,12 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { Capacitor } from '@capacitor/core';
 import './style.css';
 
 const MarkdownWorkbench = React.lazy(() => import('./MarkdownWorkbench'));
 const isMarkdownWeb = window.location.pathname.replace(/\/+$/, '') === '/markdown' &&
-  !(window as Window & { Capacitor?: unknown }).Capacitor;
+  !Capacitor.isNativePlatform();
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

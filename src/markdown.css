@@ -23,3 +23,12 @@
 .md-source textarea{min-height:45vh}
 }
 @media(max-width:360px){.md-toolbar{padding:9px}.md-actions button{padding:7px;font-size:12px}.md-status{font-size:11px}.md-source,.md-preview-host{padding:9px}}
+
+.md-diff{border-top:1px solid #3a4f65;padding:12px 18px;background:#111e2d;max-height:32vh;overflow:auto}
+.md-diff>strong{color:#a7e8db}
+.md-diff p{color:#adc2d8;font-size:12px}
+.md-diff pre{margin:0;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
+.md-diff pre span{display:block}
+.md-diff-added{color:#93deb4;background:#173527}
+.md-diff-removed{color:#f3a7a2;background:#3b2025}
+.md-diff-same{color:#8d9db3}

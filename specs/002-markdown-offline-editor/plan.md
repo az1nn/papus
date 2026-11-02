@@ -1,6 +1,6 @@
 # SPEC-MD-001 — Technical plan and roadmap
 
-Status: M0 documentation authorized; implementation NOT authorized.
+Status: M0 merged; M1–M5 implementation authorized 2026-11-01 in PR #6; acceptance and merge are NOT approved.
 Decisions: R1=Web PWA only; R2=File System Access API + fallback; R3=hybrid UTF-8 preservation; R4=defense in depth; R5=one functional PR for M1–M5. Preserve G1–G8.
 
 ## Architecture

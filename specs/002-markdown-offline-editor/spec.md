@@ -1,6 +1,6 @@
 # SPEC-MD-001 — Offline Markdown Editor
 
-Status: Approved planning; M0 documentation authorized; functional implementation NOT authorized.
+Status: Functional implementation M1–M5 authorized 2026-11-01 in PR #6; pending independent verification and merge approval.
 Constitution: Papus v2.0.0.
 Decision record: G1=B, G2=Other, G3=A, G4=Other, G5=B, G6=C, G7=C, G8=C.
 Preimplementation review: R1=Other (Web PWA only), R2=A, R3=D, R4=C, R5=A.
@@ -58,4 +58,4 @@ Offline Markdown Source and Preview with a single canonical source. Source edits
 - CA-D05: CA01–CA12 and supplemental gates verified on exact PR HEAD before merge consideration.
 
 ## Governance
-M0 is documentation only. M1–M5 require a SEPARATE explicit implementation authorization. The approved delivery strategy is one functional PR (R5=A), not a merge authorization. The original SPEC documentation was integrated through PR #3; references to an unmerged documentation-only draft are historical, not current state.
+M0 is documentation only and merged in PR #5. Separate implementation authorization was given 2026-11-01 for M1–M5 in PR #6. The approved delivery strategy is one functional PR (R5=A), not a merge authorization. The original SPEC documentation was integrated through PR #3; references to an unmerged documentation-only draft are historical, not current state.
