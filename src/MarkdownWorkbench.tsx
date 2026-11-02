@@ -12,6 +12,10 @@ export default function MarkdownWorkbench() {
   const [version, setVersion] = useState(0);
   const [notice, setNotice] = useState('Documento local. Nenhum salvamento automático.');
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<'source' | 'preview' | 'split'>('split');
+  const [split, setSplit] = useState(50);
+  const [compositionDraft, setCompositionDraft] = useState<string | null>(null);
+  const composing = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const doc = session.document;
   const refresh = () => setVersion(n => n + 1);
@@ -27,6 +31,7 @@ export default function MarkdownWorkbench() {
   async function openFile(file: File) {
     if (doc.dirty && !window.confirm('Há alterações não salvas. Descartar e abrir outro arquivo?')) return;
     setBusy(true);
+    setCompositionDraft(null);
     try {
       const incoming = await fromLocalFile(file);
       setSession(incoming);
@@ -77,10 +82,25 @@ export default function MarkdownWorkbench() {
       </div>
     </header>
     <div className="md-status" role="status">{notice} · {doc.lineEndings.crlf} CRLF / {doc.lineEndings.lf} LF · revisão {doc.revision}</div>
-    <main className="md-workspace">
+    <div className="md-view-controls">
+      <div className="md-mobile-tabs" role="group" aria-label="Modo de visualização">
+        <button aria-pressed={view === 'source'} onClick={() => setView('source')}>Source</button>
+        <button aria-pressed={view === 'preview'} onClick={() => setView('preview')}>Preview</button>
+        <button aria-pressed={view === 'split'} onClick={() => setView('split')}>Dividido</button>
+      </div>
+      <label className="md-resize">Proporção Source
+        <input type="range" min="25" max="75" step="5" value={split}
+          aria-label="Proporção dos painéis" onChange={event => setSplit(Number(event.currentTarget.value))} />
+        {split}%
+      </label>
+    </div>
+    <main className={'md-workspace md-view-' + view} style={{ '--md-split': split + '%' } as React.CSSProperties}>
       <section className="md-source">
         <label htmlFor="markdown-source">Source — Markdown canônico</label>
-        <textarea id="markdown-source" spellCheck={false} value={doc.text} onChange={e => write(e.currentTarget.value)}
+        <textarea id="markdown-source" spellCheck={false} value={compositionDraft ?? doc.text}
+          onCompositionStart={() => { composing.current = true; }}
+          onCompositionEnd={e => { composing.current = false; setCompositionDraft(null); write(e.currentTarget.value); }}
+          onChange={e => { if (composing.current) setCompositionDraft(e.currentTarget.value); else write(e.currentTarget.value); }}
           onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'z') { e.preventDefault(); history(e.shiftKey ? 'redo' : 'undo'); }
             if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'y') { e.preventDefault(); history('redo'); } }} />
       </section>

