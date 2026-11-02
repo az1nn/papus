@@ -153,3 +153,63 @@ test('untrusted Markdown cannot execute HTML, URL, SVG or initiate outbound reso
   await page.waitForTimeout(100);
   expect(outbound).toEqual([]);
 });
+
+
+test('reference Chromium 1 MiB Source/Preview p95 performance budgets', async ({ page, browserName }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'Reference machine: CI Ubuntu Chromium only.');
+  test.setTimeout(120_000);
+  await page.goto('/markdown');
+  const source = page.locator('#markdown-source');
+  const input = '# Documento\n\n' + 'a'.repeat(1_000_000 - 13);
+  await source.fill(input);
+  await expect(source).toHaveValue(input);
+  const samples: Array<{ sourceMs: number; previewMs: number }> = [];
+  for (let index = 0; index < 8; index++) {
+    const timings = await page.evaluate(async () => {
+      const editor = document.querySelector<HTMLTextAreaElement>('#markdown-source');
+      const status = document.querySelector<HTMLElement>('.md-status');
+      const frame = document.querySelector<HTMLIFrameElement>('.md-preview-frame');
+      if (!editor || !status || !frame) throw new Error('Markdown editor missing');
+      const initialRevision = Number(/revisão (\d+)/.exec(status.textContent ?? '')?.[1] ?? '-1');
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+      if (!setter) throw new Error('HTMLTextAreaElement setter missing');
+      const started = performance.now();
+      setter.call(editor, editor.value + 'x');
+      editor.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: 'x' }));
+      const awaitCondition = (predicate: () => boolean) => new Promise<void>((resolve, reject) => {
+        const deadline = performance.now() + 12_000;
+        function poll() {
+          if (predicate()) resolve();
+          else if (performance.now() > deadline) reject(new Error('Performance fixture timed out'));
+          else requestAnimationFrame(poll);
+        }
+        poll();
+      });
+      await awaitCondition(() => Number(/revisão (\d+)/.exec(status.textContent ?? '')?.[1] ?? '-1') > initialRevision);
+      const sourceMs = performance.now() - started;
+      const nextRevision = initialRevision + 1;
+      await awaitCondition(() => frame.getAttribute('srcdoc')?.includes('data-revision="' + nextRevision + '"') ?? false);
+      const previewMs = performance.now() - started;
+      return { sourceMs, previewMs };
+    });
+    samples.push(timings);
+  }
+  const percentile95 = (values: number[]) => {
+    const ordered = [...values].sort((a, b) => a - b);
+    return ordered[Math.ceil(0.95 * ordered.length) - 1];
+  };
+  const result = {
+    platform: 'github-actions/ubuntu-latest/chromium',
+    documentCharacters: input.length,
+    samples,
+    sourceP95Ms: percentile95(samples.map(s => s.sourceMs)),
+    previewP95Ms: percentile95(samples.map(s => s.previewMs)),
+    limitsMs: { source: 100, preview: 500 }
+  };
+  console.log('SPEC-MD-001 performance reference: ' + JSON.stringify(result));
+  await testInfo.attach('markdown-performance.json', {
+    body: JSON.stringify(result, null, 2), contentType: 'application/json'
+  });
+  expect(result.sourceP95Ms).toBeLessThanOrEqual(100);
+  expect(result.previewP95Ms).toBeLessThanOrEqual(500);
+});
