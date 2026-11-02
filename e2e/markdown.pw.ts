@@ -70,3 +70,13 @@ test('Mermaid renders as an isolated local SVG data image', async ({ page }) => 
   const src = await image.getAttribute('src');
   expect(src).toMatch(/^data:image\/svg\+xml/);
 });
+
+test('Markdown route does not fetch Universal Reader document modules', async ({ page }) => {
+  const scriptRequests: string[] = [];
+  page.on('request', req => {
+    if (req.resourceType() === 'script') scriptRequests.push(req.url());
+  });
+  await page.goto('/markdown');
+  await expect(page.locator('#markdown-source')).toBeVisible();
+  expect(scriptRequests.some(url => /\/assets\/App-[^/]+\.js/.test(url))).toBe(false);
+});
