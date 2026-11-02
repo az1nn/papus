@@ -1,7 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Capacitor } from '@capacitor/core';
-import './style.css';
 
 // Route-level splitting: the Universal Reader must not load in the Markdown-only PWA.
 const ReaderApp = React.lazy(() => import('./App'));

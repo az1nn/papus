@@ -135,7 +135,7 @@ test('invalid UTF-8 import is rejected without replacing current Source', async 
     name: 'invalid.md', mimeType: 'text/markdown', buffer: Buffer.from([0xC3, 0x28])
   });
   await expect(page.locator('#markdown-source')).toHaveValue('# Keep');
-  await expect(page.getByRole('status').first()).toContainText('encoded data');
+  await expect(page.getByRole('status').first()).toContainText('UTF-8 inválido');
 });
 
 test('untrusted Markdown cannot execute HTML, URL, SVG or initiate outbound resource requests', async ({ page }) => {
@@ -212,4 +212,18 @@ test('reference Chromium 1 MiB Source/Preview p95 performance budgets', async ({
   });
   expect(result.sourceP95Ms).toBeLessThanOrEqual(100);
   expect(result.previewP95Ms).toBeLessThanOrEqual(500);
+});
+
+
+test('Markdown PWA route does not request remote fonts or third-party assets', async ({ page }) => {
+  const external: string[] = [];
+  page.on('request', req => {
+    const address = new URL(req.url());
+    if (address.hostname !== '127.0.0.1' && address.hostname !== 'localhost') external.push(req.url());
+  });
+  await page.goto('/markdown');
+  await expect(page.locator('#markdown-source')).toBeVisible();
+  await page.locator('#markdown-source').fill('# Conteúdo local');
+  await expect(page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]').locator('h1')).toContainText('Conteúdo local');
+  expect(external).toEqual([]);
 });

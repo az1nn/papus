@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import './style.css';
 import { Capacitor } from '@capacitor/core';
 import { readLibrary, readFile, saveFile, removeStoredFile, type DocMeta } from './storage';
 import { ArrowDownToLine, BookOpenText, Check, ChevronRight, CloudOff, Copy, FilePlus2, FileSearch, FileText, FolderOpen, HardDrive, LoaderCircle, Menu, MessageCircle, Search, Send, ShieldCheck, Sparkles, Trash2, UploadCloud, X } from 'lucide-react';

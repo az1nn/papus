@@ -14,8 +14,13 @@ function countEndings(text: string): LineEndings {
 
 export function decodeMarkdown(bytes: Uint8Array): { text: string; bom: boolean } {
   const bom = bytes.length >= 3 && bytes[0] === 239 && bytes[1] === 187 && bytes[2] === 191;
-  const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bom ? bytes.subarray(3) : bytes);
-  return { text, bom };
+  try {
+    const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
+      .decode(bom ? bytes.subarray(3) : bytes);
+    return { text, bom };
+  } catch {
+    throw new Error('UTF-8 inválido: importação cancelada sem modificar o documento.');
+  }
 }
 
 export function wellFormedUnicode(text: string): boolean {
