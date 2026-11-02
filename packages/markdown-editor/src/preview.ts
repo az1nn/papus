@@ -4,6 +4,21 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkFrontmatter from 'remark-frontmatter';
 import { validPatchRange, type TextPatch } from './core';
+import katex from 'katex';
+import hljs from 'highlight.js/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import json from 'highlight.js/lib/languages/json';
+import python from 'highlight.js/lib/languages/python';
+import yamlLanguage from 'highlight.js/lib/languages/yaml';
+import YAML from 'yaml';
+
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('yaml', yamlLanguage);
+
 
 interface MdNode {
   type: string; value?: string; depth?: number; url?: string; lang?: string;
@@ -11,7 +26,7 @@ interface MdNode {
   position?: { start?: { offset?: number }; end?: { offset?: number } };
 }
 export interface TextSpan { start: number; end: number; text: string }
-export interface RenderResult { html: string; spans: TextSpan[]; warnings: string[] }
+export interface RenderResult { html: string; spans: TextSpan[]; warnings: string[]; diagrams: string[] }
 const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath).use(remarkFrontmatter, ['yaml']);
 
 export function escapeHtml(value: string): string {
@@ -24,6 +39,7 @@ function safeAnchor(href?: string): string | null {
 export function parsePreview(source: string): RenderResult {
   const spans: TextSpan[] = [];
   const warnings: string[] = [];
+  const diagrams: string[] = [];
   const ast = parser.parse(source) as unknown as MdNode;
   function children(node: MdNode): string {
     return (node.children ?? []).map(child => render(child, node)).join('');
@@ -54,7 +70,20 @@ export function parsePreview(source: string): RenderResult {
       case 'strong': return '<strong>' + children(node) + '</strong>';
       case 'delete': return '<del>' + children(node) + '</del>';
       case 'inlineCode': return '<code>' + escapeHtml(value) + '</code>';
-      case 'code': return '<pre><code data-language="' + escapeHtml(node.lang ?? '') + '">' + escapeHtml(value) + '</code></pre>';
+      case 'code': {
+        const language = (node.lang ?? '').toLowerCase();
+        if (language === 'mermaid') {
+          if (value.length > 20_000) {
+            warnings.push('Diagrama Mermaid grande demais: exibido como texto.');
+            return '<pre><code>' + escapeHtml(value) + '</code></pre>';
+          }
+          const index = diagrams.push(value) - 1;
+          return '<div class="md-mermaid-slot" data-diagram="' + index + '"><pre>Renderizando Mermaid offline…</pre></div>';
+        }
+        const known = hljs.getLanguage(language);
+        const highlighted = known ? hljs.highlight(value, { language, ignoreIllegals: true }).value : escapeHtml(value);
+        return '<pre><code class="hljs">' + highlighted + '</code></pre>';
+      }
       case 'blockquote': return '<blockquote>' + children(node) + '</blockquote>';
       case 'list': return node.ordered ? '<ol>' + children(node) + '</ol>' : '<ul>' + children(node) + '</ul>';
       case 'listItem': return '<li>' + (typeof node.checked === 'boolean' ?
@@ -80,9 +109,18 @@ export function parsePreview(source: string): RenderResult {
       case 'tableCell': return '<td>' + children(node) + '</td>';
       case 'thematicBreak': return '<hr />';
       case 'break': return '<br />';
-      case 'yaml': return '<details><summary>YAML frontmatter (somente Source)</summary><pre>' + escapeHtml(value) + '</pre></details>';
-      case 'math': return '<div class="md-math" data-math="block">' + escapeHtml(value) + '</div>';
-      case 'inlineMath': return '<span class="md-math" data-math="inline">' + escapeHtml(value) + '</span>';
+      case 'yaml': {
+        try {
+          const parsed = YAML.parse(value, { maxAliasCount: 32 }) as unknown;
+          return '<details><summary>YAML frontmatter (somente Source)</summary><pre>' +
+            escapeHtml(JSON.stringify(parsed, null, 2) ?? '') + '</pre></details>';
+        } catch {
+          warnings.push('Frontmatter YAML inválido; texto original preservado.');
+          return '<details><summary>YAML inválido</summary><pre>' + escapeHtml(value) + '</pre></details>';
+        }
+      }
+      case 'math': return '<div class="md-math">' + katex.renderToString(value, { displayMode: true, throwOnError: false, trust: false, output: 'mathml' }) + '</div>';
+      case 'inlineMath': return katex.renderToString(value, { displayMode: false, throwOnError: false, trust: false, output: 'mathml' });
       case 'html':
         warnings.push('HTML incorporado foi neutralizado.');
         return '<pre class="md-escaped-html">' + escapeHtml(value) + '</pre>';
@@ -96,7 +134,7 @@ export function parsePreview(source: string): RenderResult {
     const tag = header ? 'th' : 'td';
     return '<tr>' + (node.children ?? []).map(cell => '<' + tag + '>' + children(cell) + '</' + tag + '>').join('') + '</tr>';
   }
-  return { html: render(ast), spans, warnings: Array.from(new Set(warnings)) };
+  return { html: render(ast), spans, warnings: Array.from(new Set(warnings)), diagrams };
 }
 
 export interface PreviewPatchMessage {
