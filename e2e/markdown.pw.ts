@@ -33,3 +33,29 @@ test('malicious Markdown does not trigger network egress', async ({ page }) => {
   await page.waitForTimeout(100);
   expect(requests).toEqual([]);
 });
+
+test('fallback download is not marked as saved', async ({ page }) => {
+  await page.goto('/markdown');
+  await page.locator('#markdown-source').fill('# Rascunho\n');
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Salvar', exact: true }).click()
+  ]);
+  expect(download.suggestedFilename()).toBe('sem-titulo.md');
+  await expect(page.getByRole('status').first()).toContainText('Download solicitado');
+  await expect(page.locator('.md-filename')).toContainText('não salvo');
+});
+
+test('installed Markdown PWA can edit while offline', async ({ page, context, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Baseline PWA offline Chromium; other engines require separate feature matrix.');
+  await page.goto('/markdown');
+  await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) throw new Error('Service worker unavailable');
+    await navigator.serviceWorker.ready;
+  });
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.locator('#markdown-source')).toBeVisible();
+  await page.locator('#markdown-source').fill('# Offline\n');
+  await expect(page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]').locator('h1')).toHaveText('Offline');
+});
