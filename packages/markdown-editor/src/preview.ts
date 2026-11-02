@@ -172,6 +172,59 @@ export function validatePreviewMessage(
 }
 
 function previewBridge() {
+  // Trusted parent may request a small, plain-text delta in an already mapped span.
+  // This avoids reparsing and reloading a 1 MiB iframe on every safe keystroke.
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent) return;
+    const data = event.data;
+    if (!data || data.kind !== 'papus.md.preview.render-delta.v1') return;
+    const root = document.documentElement;
+    const reply = (ok: boolean) => window.parent.postMessage({
+      kind: 'papus.md.preview.render-ack.v1', token: root.dataset.token,
+      revision: data.toRevision, ok
+    }, '*');
+    const from = Number(root.dataset.revision);
+    if (data.token !== root.dataset.token ||
+        data.fromRevision !== from || data.toRevision !== from + 1 ||
+        !Number.isSafeInteger(data.start) || !Number.isSafeInteger(data.end) ||
+        data.start < 0 || data.end < data.start ||
+        typeof data.expectedText !== 'string' ||
+        typeof data.inserted !== 'string' || data.inserted.length > 4096 ||
+        !/^[\p{L}\p{N}\p{M}\p{Zs}]*$/u.test(data.inserted) ||
+        document.querySelector('.md-inline-editor')) {
+      reply(false);
+      return;
+    }
+    const elements = Array.from(document.querySelectorAll<HTMLElement>('.md-correctable'));
+    const target = elements.find(element =>
+      Number(element.dataset.start) <= data.start &&
+      data.end <= Number(element.dataset.end));
+    if (!target) { reply(false); return; }
+    const start = Number(target.dataset.start);
+    const end = Number(target.dataset.end);
+    const previous = target.textContent ?? '';
+    const relativeStart = data.start - start, relativeEnd = data.end - start;
+    if (previous.slice(relativeStart, relativeEnd) !== data.expectedText ||
+        previous.length !== end - start) {
+      reply(false);
+      return;
+    }
+    const next = previous.slice(0, relativeStart) + data.inserted + previous.slice(relativeEnd);
+    if (!next.length) { reply(false); return; }
+    const shift = data.inserted.length - (data.end - data.start);
+    target.textContent = next;
+    target.dataset.end = String(end + shift);
+    for (const element of elements) {
+      if (element === target) continue;
+      const elementStart = Number(element.dataset.start), elementEnd = Number(element.dataset.end);
+      if (elementStart >= data.end) {
+        element.dataset.start = String(elementStart + shift);
+        element.dataset.end = String(elementEnd + shift);
+      }
+    }
+    root.dataset.revision = String(data.toRevision);
+    reply(true);
+  });
   document.addEventListener('click', event => {
     if (!(event.target instanceof Element)) return;
     const span = event.target.closest('.md-correctable') as HTMLElement | null;

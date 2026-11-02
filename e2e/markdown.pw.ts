@@ -188,7 +188,7 @@ test('reference Chromium 1 MiB Source/Preview p95 performance budgets', async ({
       await awaitCondition(() => Number(/revisão (\d+)/.exec(status.textContent ?? '')?.[1] ?? '-1') > initialRevision);
       const sourceMs = performance.now() - started;
       const nextRevision = initialRevision + 1;
-      await awaitCondition(() => frame.getAttribute('srcdoc')?.includes('data-revision="' + nextRevision + '"') ?? false);
+      await awaitCondition(() => frame.dataset.renderRevision === String(nextRevision));
       const previewMs = performance.now() - started;
       return { sourceMs, previewMs };
     });
@@ -226,4 +226,21 @@ test('Markdown PWA route does not request remote fonts or third-party assets', a
   await page.locator('#markdown-source').fill('# Conteúdo local');
   await expect(page.frameLocator('iframe[title="Pré-visualização Markdown isolada"]').locator('h1')).toContainText('Conteúdo local');
   expect(external).toEqual([]);
+});
+
+
+test('large safe text edits update the sandboxed Preview without iframe reload', async ({ page }) => {
+  await page.goto('/markdown');
+  const start = '# Heading\n\n' + 'a'.repeat(150_000);
+  await page.locator('#markdown-source').fill(start);
+  const frame = page.locator('iframe.md-preview-frame');
+  await expect.poll(async () => await frame.getAttribute('data-render-revision')).toBe('1');
+  const originalSrcdoc = await frame.getAttribute('srcdoc');
+  await page.locator('#markdown-source').press('End');
+  await page.locator('#markdown-source').press('x');
+  await expect.poll(async () => await frame.getAttribute('data-render-revision')).toBe('2');
+  expect(await frame.getAttribute('srcdoc')).toBe(originalSrcdoc);
+  const preview = page.frameLocator('iframe.md-preview-frame');
+  await expect(preview.locator('p')).toContainText('x');
+  await expect(page.locator('#markdown-source')).toHaveValue(start + 'x');
 });
