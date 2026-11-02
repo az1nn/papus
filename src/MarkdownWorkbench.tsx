@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fromLocalFile, openWithPicker, requestDownload, saveAs, saveDirect, sessionFromBytes, type FileSession } from '@reader/markdown-editor';
+import PreviewFrame from './PreviewFrame';
 import './markdown.css';
 
 function message(error: unknown): string {
@@ -85,7 +86,9 @@ export default function MarkdownWorkbench() {
       </section>
       <section className="md-preview-host" aria-label="Preview Markdown">
         <strong>Preview seguro</strong>
-        <div className="md-placeholder">O editor Source permanece o único documento canônico. A visualização isolada e as correções textuais serão integradas nos próximos checkpoints deste PR.</div>
+        <PreviewFrame text={doc.text} revision={doc.revision}
+          onReject={reason => setNotice(reason)}
+          onPatch={patch => { const result = doc.apply(patch); if (!result.ok) setNotice(result.reason); else setNotice('Correção textual aplicada ao Source, ainda não salva.'); refresh(); }} />
       </section>
     </main>
     <footer className="md-foot">PWA Web · Sem backend, autosave, Git ou envio remoto · UTF-8 {doc.bom ? 'com BOM' : 'sem BOM'}</footer>
